@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AdForge — AI Campaign Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --cream: #faf8f5;
+    --white: #ffffff;
+    --ink: #1a1814;
+    --ink-soft: #4a4640;
+    --ink-muted: #9a948e;
+    --accent: #c8602a;
+    --accent-light: #f0e8e0;
+    --accent-dark: #a04820;
+    --border: #e8e2da;
+    --border-soft: #f0ece6;
+    --success: #2d7a4f;
+    --shadow-sm: 0 1px 3px rgba(26,24,20,0.08);
+    --shadow-md: 0 4px 16px rgba(26,24,20,0.10);
+    --shadow-lg: 0 12px 40px rgba(26,24,20,0.12);
+    --radius: 4px;
+    --radius-lg: 8px;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--ink);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    padding: 0 48px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo-mark {
+    width: 32px;
+    height: 32px;
+    background: var(--ink);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .logo-mark svg {
+    width: 18px;
+    height: 18px;
+    fill: var(--white);
+  }
+
+  .logo-text {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.3px;
+  }
+
+  .logo-text span {
+    color: var(--accent);
+  }
+
+  .header-badge {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    background: var(--border-soft);
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+  }
+
+  /* ── HERO ── */
+  .hero {
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    padding: 64px 48px 48px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 64px;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 20px;
+  }
+
+  .hero-eyebrow::before {
+    content: '';
+    display: block;
+    width: 24px;
+    height: 2px;
+    background: var(--accent);
+    border-radius: 2px;
+  }
+
+  .hero h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 48px;
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.5px;
+    color: var(--ink);
+    margin-bottom: 20px;
+  }
+
+  .hero h1 em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  .hero p {
+    font-size: 16px;
+    color: var(--ink-soft);
+    line-height: 1.7;
+    font-weight: 300;
+  }
+
+  .hero-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+
+  .stat-card {
+    background: var(--cream);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    text-align: center;
+  }
+
+  .stat-number {
+    font-family: 'Playfair Display', serif;
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .stat-label {
+    font-size: 12px;
+    color: var(--ink-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    font-weight: 500;
+  }
+
+  /* ── MAIN LAYOUT ── */
+  .main-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 48px;
+    display: grid;
+    grid-template-columns: 420px 1fr;
+    gap: 32px;
+    align-items: start;
+  }
+
+  /* ── FORM PANEL ── */
+  .form-panel {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+    position: sticky;
+    top: 88px;
+  }
+
+  .panel-header {
+    padding: 24px 28px;
+    border-bottom: 1px solid var(--border);
+    background: var(--ink);
+  }
+
+  .panel-header h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--white);
+    margin-bottom: 4px;
+  }
+
+  .panel-header p {
+    font-size: 13px;
+    color: rgba(255,255,255,0.5);
+    font-weight: 300;
+  }
+
+  .panel-body {
+    padding: 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  label {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+
+  label .required {
+    color: var(--accent);
+    margin-left: 2px;
+  }
+
+  input[type="text"],
+  textarea,
+  select {
+    width: 100%;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: var(--ink);
+    background: var(--cream);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 11px 14px;
+    transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+    outline: none;
+    -webkit-appearance: none;
+  }
+
+  input[type="text"]:focus,
+  textarea:focus,
+  select:focus {
+    border-color: var(--ink);
+    background: var(--white);
+    box-shadow: 0 0 0 3px rgba(26,24,20,0.06);
+  }
+
+  textarea {
+    resize: vertical;
+    min-height: 96px;
+    line-height: 1.6;
+  }
+
+  .select-wrapper {
+    position: relative;
+  }
+
+  .select-wrapper::after {
+    content: '▾';
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--ink-muted);
+    font-size: 12px;
+    pointer-events: none;
+  }
+
+  select {
+    cursor: pointer;
+    padding-right: 36px;
+  }
+
+  .platform-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .platform-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--cream);
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-soft);
+    transition: all 0.15s;
+    -webkit-appearance: none;
+  }
+
+  .platform-btn:hover {
+    border-color: var(--ink-soft);
+    color: var(--ink);
+  }
+
+  .platform-btn.active {
+    border-color: var(--ink);
+    background: var(--ink);
+    color: var(--white);
+  }
+
+  .platform-btn .icon {
+    font-size: 15px;
+    line-height: 1;
+  }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+  }
+
+  .generate-btn {
+    width: 100%;
+    padding: 14px;
+    background: var(--accent);
+    color: var(--white);
+    border: none;
+    border-radius: var(--radius);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .generate-btn:hover:not(:disabled) {
+    background: var(--accent-dark);
+    box-shadow: 0 4px 12px rgba(200,96,42,0.35);
+  }
+
+  .generate-btn:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+
+  .generate-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .generate-btn .spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: none;
+  }
+
+  .generate-btn.loading .spinner { display: block; }
+  .generate-btn.loading .btn-text { display: none; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── OUTPUT PANEL ── */
+  .output-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .output-empty {
+    background: var(--white);
+    border: 1.5px dashed var(--border);
+    border-radius: var(--radius-lg);
+    padding: 80px 40px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .empty-icon {
+    width: 56px;
+    height: 56px;
+    background: var(--border-soft);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+  }
+
+  .output-empty h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    color: var(--ink);
+  }
+
+  .output-empty p {
+    font-size: 14px;
+    color: var(--ink-muted);
+    max-width: 280px;
+    line-height: 1.6;
+  }
+
+  /* ── RESULT CARDS ── */
+  .result-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 24px;
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .result-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .result-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--success);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .result-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .result-subtitle {
+    font-size: 12px;
+    color: var(--ink-muted);
+  }
+
+  .copy-all-btn {
+    padding: 8px 16px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--white);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    cursor: pointer;
+    transition: all 0.15s;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .copy-all-btn:hover {
+    border-color: var(--ink);
+    color: var(--ink);
+  }
+
+  .campaign-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .campaign-grid .card-full {
+    grid-column: 1 / -1;
+  }
+
+  .result-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow 0.2s;
+    animation: fadeSlideUp 0.4s ease both;
+  }
+
+  .result-card:hover {
+    box-shadow: var(--shadow-md);
+  }
+
+  @keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .result-card:nth-child(2) { animation-delay: 0.05s; }
+  .result-card:nth-child(3) { animation-delay: 0.10s; }
+  .result-card:nth-child(4) { animation-delay: 0.15s; }
+  .result-card:nth-child(5) { animation-delay: 0.20s; }
+  .result-card:nth-child(6) { animation-delay: 0.25s; }
+
+  .card-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--border-soft);
+    background: var(--cream);
+  }
+
+  .card-label-text {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+
+  .card-label-icon {
+    font-size: 14px;
+  }
+
+  .card-copy-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--ink-muted);
+    padding: 2px 6px;
+    border-radius: 3px;
+    transition: all 0.15s;
+  }
+
+  .card-copy-btn:hover {
+    color: var(--ink);
+    background: var(--border);
+  }
+
+  .card-content {
+    padding: 18px;
+    font-size: 14px;
+    color: var(--ink);
+    line-height: 1.7;
+    font-weight: 400;
+    white-space: pre-wrap;
+  }
+
+  .card-content.headline {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.3;
+    color: var(--ink);
+  }
+
+  .card-content.tagline {
+    font-style: italic;
+    font-size: 16px;
+    color: var(--ink-soft);
+  }
+
+  .card-accent-left {
+    border-left: 3px solid var(--accent);
+  }
+
+  /* ── PLATFORM TAGS ── */
+  .platform-tag-strip {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 14px 18px;
+    border-top: 1px solid var(--border-soft);
+    background: var(--cream);
+  }
+
+  .ptag {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 20px;
+    background: var(--border);
+    color: var(--ink-soft);
+  }
+
+  /* ── ERROR ── */
+  .error-toast {
+    display: none;
+    background: #fff5f5;
+    border: 1px solid #fca5a5;
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    font-size: 13px;
+    color: #b91c1c;
+    margin-top: -8px;
+  }
+
+  .error-toast.show { display: block; }
+
+  /* ── FOOTER ── */
+  footer {
+    margin-top: 80px;
+    border-top: 1px solid var(--border);
+    padding: 28px 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  footer p {
+    font-size: 12px;
+    color: var(--ink-muted);
+  }
+
+  footer .footer-logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  footer .footer-logo span { color: var(--accent); }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 960px) {
+    header { padding: 0 24px; }
+    .hero { grid-template-columns: 1fr; padding: 40px 24px; gap: 32px; }
+    .hero h1 { font-size: 36px; }
+    .main-container { grid-template-columns: 1fr; padding: 24px; }
+    .form-panel { position: static; }
+    .campaign-grid { grid-template-columns: 1fr; }
+    .campaign-grid .card-full { grid-column: 1; }
+    footer { flex-direction: column; gap: 12px; text-align: center; padding: 24px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-mark">
+      <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+    </div>
+    <span class="logo-text">Ad<span>Forge</span></span>
+  </div>
+  <span class="header-badge">AI Campaign Studio</span>
+</header>
+
+<!-- HERO -->
+<div style="background:var(--white); border-bottom:1px solid var(--border);">
+  <div class="hero">
+    <div>
+      <div class="hero-eyebrow">AI-Powered Platform</div>
+      <h1>Campaign copy that<br><em>actually converts.</em></h1>
+      <p>Input your product, select your tone and platforms — AdForge generates complete, ready-to-publish advertisement campaigns in seconds.</p>
+    </div>
+    <div class="hero-stats">
+      <div class="stat-card">
+        <div class="stat-number">5x</div>
+        <div class="stat-label">Faster</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">6</div>
+        <div class="stat-label">Ad Formats</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">4</div>
+        <div class="stat-label">Platforms</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main-container">
+
+  <!-- FORM PANEL -->
+  <aside class="form-panel">
+    <div class="panel-header">
+      <h2>Campaign Brief</h2>
+      <p>Fill in the details below to generate your campaign</p>
+    </div>
+    <div class="panel-body">
+
+      <div class="field-group">
+        <label>Product Name <span class="required">*</span></label>
+        <input type="text" id="productName" placeholder="e.g. Nike Air Max 2025" />
+      </div>
+
+      <div class="field-group">
+        <label>Product Description <span class="required">*</span></label>
+        <textarea id="productDesc" placeholder="Describe your product — what it does, who it's for, what makes it special..."></textarea>
+      </div>
+
+      <div class="field-group">
+        <label>Campaign Tone</label>
+        <div class="select-wrapper">
+          <select id="tone">
+            <option value="professional">Professional & Authoritative</option>
+            <option value="luxury">Luxury & Premium</option>
+            <option value="casual">Casual & Friendly</option>
+            <option value="urgent">Urgent & Action-Driven</option>
+            <option value="humorous">Witty & Humorous</option>
+            <option value="inspirational">Inspirational & Emotional</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label>Target Platforms</label>
+        <div class="platform-grid">
+          <button class="platform-btn active" data-platform="instagram" onclick="togglePlatform(this)">
+            <span class="icon">📸</span> Instagram
+          </button>
+          <button class="platform-btn active" data-platform="facebook" onclick="togglePlatform(this)">
+            <span class="icon">👥</span> Facebook
+          </button>
+          <button class="platform-btn" data-platform="twitter" onclick="togglePlatform(this)">
+            <span class="icon">🐦</span> Twitter / X
+          </button>
+          <button class="platform-btn" data-platform="billboard" onclick="togglePlatform(this)">
+            <span class="icon">🏙️</span> Billboard
+          </button>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label>Target Audience</label>
+        <input type="text" id="audience" placeholder="e.g. Young professionals aged 25–35" />
+      </div>
+
+      <div class="divider"></div>
+
+      <div id="errorToast" class="error-toast">
+        Please fill in both product name and description.
+      </div>
+
+      <button class="generate-btn" id="generateBtn" onclick="generateCampaign()">
+        <span class="btn-text">✦ Generate Campaign</span>
+        <div class="spinner"></div>
+      </button>
+
+    </div>
+  </aside>
+
+  <!-- OUTPUT PANEL -->
+  <main class="output-panel" id="outputPanel">
+    <div class="output-empty" id="emptyState">
+      <div class="empty-icon">✦</div>
+      <h3>Your campaign awaits</h3>
+      <p>Fill in the brief on the left and click Generate Campaign to get started.</p>
+    </div>
+  </main>
+
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <span class="footer-logo">Ad<span>Forge</span></span>
+  <p>AI Campaign Generator · Built with Gemini AI · Group Project</p>
+  <p>© 2025 AdForge</p>
+</footer>
+
+<script>
+  // ── PLATFORM TOGGLE ──
+  function togglePlatform(btn) {
+    btn.classList.toggle('active');
+  }
+
+  function getActivePlatforms() {
+    return [...document.querySelectorAll('.platform-btn.active')]
+      .map(b => b.dataset.platform);
+  }
+
+  // ── COPY HELPERS ──
+  function copyText(text, btn) {
+    navigator.clipboard.writeText(text).then(() => {
+      const original = btn.textContent;
+      btn.textContent = '✓';
+      setTimeout(() => btn.textContent = original, 1500);
+    });
+  }
+
+  function copyAll() {
+    const cards = document.querySelectorAll('.card-content');
+    const labels = document.querySelectorAll('.card-label-text');
+    let full = '';
+    cards.forEach((c, i) => {
+      if (labels[i]) full += labels[i].textContent.trim() + '\n';
+      full += c.textContent.trim() + '\n\n';
+    });
+    navigator.clipboard.writeText(full).then(() => {
+      const btn = document.getElementById('copyAllBtn');
+      if (btn) { btn.textContent = '✓ Copied!'; setTimeout(() => btn.textContent = 'Copy All', 1500); }
+    });
+  }
+
+  // ── MAIN GENERATOR ──
+  async function generateCampaign() {
+    const name = document.getElementById('productName').value.trim();
+    const desc = document.getElementById('productDesc').value.trim();
+    const tone = document.getElementById('tone').value;
+    const audience = document.getElementById('audience').value.trim();
+    const platforms = getActivePlatforms();
+    const errorToast = document.getElementById('errorToast');
+    const btn = document.getElementById('generateBtn');
+
+    // Validation
+    errorToast.classList.remove('show');
+    if (!name || !desc) { errorToast.classList.add('show'); return; }
+
+    // Loading state
+    btn.disabled = true;
+    btn.classList.add('loading');
+
+    const toneMap = {
+      professional: 'professional and authoritative',
+      luxury: 'luxurious and premium, evoking exclusivity',
+      casual: 'casual, warm, and conversational',
+      urgent: 'urgent and action-driven with strong CTAs',
+      humorous: 'witty, clever, and gently humorous',
+      inspirational: 'inspirational, emotional, and aspirational'
+    };
+
+    const platformLabel = platforms.length > 0
+      ? platforms.join(', ')
+      : 'Instagram, Facebook';
+
+    const audienceNote = audience
+      ? `Target audience: ${audience}.`
+      : 'Identify the most suitable target audience.';
+
+    const prompt = `You are a senior advertising strategist and copywriter at a top-tier creative agency. Generate a complete, professional advertisement campaign for the following product.
+
+Product: ${name}
+Description: ${desc}
+Tone: ${toneMap[tone]}
+Platforms: ${platformLabel}
+${audienceNote}
+
+Return ONLY a valid JSON object with exactly these keys (no extra text, no markdown):
+{
+  "headline": "A powerful, memorable main headline (max 12 words)",
+  "tagline": "A concise brand tagline or slogan (max 8 words)",
+  "adCopy": "Full advertisement body copy, 3-4 sentences, persuasive and on-brand",
+  "callToAction": "A strong, specific CTA phrase (max 6 words)",
+  "targetAudience": "Detailed target audience profile, 2-3 sentences covering demographics, psychographics, and behavior",
+  "platformVersions": "Brief adapted copy notes for each requested platform (1-2 sentences each)",
+  "keyBenefits": "3 key product benefits as a short list, each on a new line starting with •"
+}`;
+
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          messages: [{ role: 'user', content: prompt }]
+        })
+      });
+
+      const data = await response.json();
+      const raw = data.content?.find(b => b.type === 'text')?.text || '';
+      const clean = raw.replace(/```json|```/g, '').trim();
+      const result = JSON.parse(clean);
+      renderOutput(result, name, platforms, tone);
+
+    } catch (err) {
+      console.error(err);
+      errorToast.textContent = 'Something went wrong generating the campaign. Check your API key or try again.';
+      errorToast.classList.add('show');
+    } finally {
+      btn.disabled = false;
+      btn.classList.remove('loading');
+    }
+  }
+
+  // ── RENDER OUTPUT ──
+  function renderOutput(r, productName, platforms, tone) {
+    const panel = document.getElementById('outputPanel');
+
+    const toneLabels = {
+      professional: 'Professional', luxury: 'Luxury', casual: 'Casual',
+      urgent: 'Urgent', humorous: 'Humorous', inspirational: 'Inspirational'
+    };
+
+    const platformTags = platforms.map(p =>
+      `<span class="ptag">${p.charAt(0).toUpperCase() + p.slice(1)}</span>`
+    ).join('');
+
+    panel.innerHTML = `
+      <div class="result-header">
+        <div class="result-meta">
+          <div class="result-dot"></div>
+          <div>
+            <div class="result-title">${productName} Campaign</div>
+            <div class="result-subtitle">Generated · ${toneLabels[tone] || 'Professional'} tone</div>
+          </div>
+        </div>
+        <button class="copy-all-btn" id="copyAllBtn" onclick="copyAll()">Copy All</button>
+      </div>
+
+      <div class="campaign-grid">
+
+        <div class="result-card card-accent-left card-full" style="animation-delay:0s">
+          <div class="card-label">
+            <div class="card-label-text"><span class="card-label-icon">✦</span> Headline</div>
+            <button class="card-copy-btn" onclick="copyText(this.closest('.result-card').querySelector('.card-content').textContent, this)">⎘</button>
+          </div>
+          <div class="card-content headline">${escHtml(r.headline)}</div>
+          <div class="card-label" style="border-top:1px solid var(--border-soft);">
+            <div class="card-label-text"><span class="card-label-icon">◇</span> Tagline</div>
+            <button class="card-copy-btn" onclick="copyText('${escJs(r.tagline)}', this)">⎘</button>
+          </div>
+          <div class="card-content tagline">${escHtml(r.tagline)}</div>
+          ${platformTags ? `<div class="platform-tag-strip">${platformTags}</div>` : ''}
+        </div>
+
+        <div class="result-card" style="animation-delay:0.05s">
+          <div class="card-label">
+            <div class="card-label-text"><span class="card-label-icon">◈</span> Ad Copy</div>
+            <button class="card-copy-btn" onclick="copyText(this.closest('.result-card').querySelector('.card-content').textContent, this)">⎘</button>
+          </div>
+          <div class="card-content">${escHtml(r.adCopy)}</div>
+        </div>
+
+        <div class="result-card" style="animation-delay:0.10s">
+          <div class="card-label">
+            <div class="card-label-text"><span class="card-label-icon">→</span> Call to Action</div>
+            <button class="card-copy-btn" onclick="copyText(this.closest('.result-card').querySelector('.card-content').textContent, this)">⎘</button>
+          </div>
+          <div class="card-content" style="font-weight:600; font-size:16px; color:var(--accent);">${escHtml(r.callToAction)}</div>
+        </div>
+
+        <div class="result-card" style="animation-delay:0.15s">
+          <div class="card-label">
+            <div class="card-label-text"><span class="card-label-icon">◉</span> Target Audience</div>
+            <button class="card-copy-btn" onclick="copyText(this.closest('.result-card').querySelector('.card-content').textContent, this)">⎘</button>
+          </div>
+          <div class="card-content">${escHtml(r.targetAudience)}</div>
+        </div>
+
+        <div class="result-card" style="animation-delay:0.20s">
+          <div class="card-label">
+            <div class="card-label-text"><span class="card-label-icon">◆</span> Key Benefits</div>
+            <button class="card-copy-btn" onclick="copyText(this.closest('.result-card').querySelector('.card-content').textContent, this)">⎘</button>
+          </div>
+          <div class="card-content">${escHtml(r.keyBenefits)}</div>
+        </div>
+
+        <div class="result-card card-full" style="animation-delay:0.25s">
+          <div class="card-label">
+            <div class="card-label-text"><span class="card-label-icon">⊞</span> Platform Adaptations</div>
+            <button class="card-copy-btn" onclick="copyText(this.closest('.result-card').querySelector('.card-content').textContent, this)">⎘</button>
+          </div>
+          <div class="card-content">${escHtml(r.platformVersions)}</div>
+        </div>
+
+      </div>
+    `;
+
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function escHtml(str) {
+    return String(str || '')
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+      .replace(/\n/g,'<br>');
+  }
+
+  function escJs(str) {
+    return String(str || '').replace(/'/g,"\\'").replace(/\n/g,' ');
+  }
+</script>
+</body>
+</html>
