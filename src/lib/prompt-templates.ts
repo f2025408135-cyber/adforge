@@ -19,7 +19,7 @@ Generate a campaign with EXACTLY these 7 sections. Return ONLY a valid JSON obje
   "adCopy": "Full advertisement body copy. 3-5 sentences, persuasive and on-brand. Must include at least one specific benefit and one emotional trigger.",
   "callToAction": "A strong, specific CTA phrase that creates urgency. Max 6 words. Use action verbs.",
   "targetAudience": "Detailed target audience profile in 2-3 sentences covering demographics (age, income, location), psychographics (values, aspirations), and behavioral patterns (purchase habits, media consumption).",
-  "keyBenefits": "3 key product benefits as bullet points. Each starts with a strong verb. Format: • [Benefit 1]\\n• [Benefit 2]\\n• [Benefit 3]",
+  "keyBenefits": "3 key product benefits as bullet points. Each starts with a strong verb. Format: bullet points.",
   "platformVersions": "Adapted copy notes for each requested platform. 1-2 sentences per platform explaining how the core message adapts to that platform's format, audience behavior, and character limits."
 }
 
@@ -67,14 +67,14 @@ export function buildPrompt(params: {
 }
 
 export const TEMPLATE_PROMPTS: Record<string, string> = {
-  'product-launch': ' Include a sense of newness and innovation. Emphasize the launch date and exclusivity. Build anticipation and excitement.',
-  'flash-sale': ' Include a sense of urgency. Mention limited time/quantity. Use countdown-style language. Create FOMO (fear of missing out).',
-  'brand-awareness': ' Focus on brand story and values. Build emotional connection. Prioritize memorability over conversion. Use distinctive brand voice.',
-  'event-promotion': ' Include event details (date, time, location). Emphasize what's unique about this event. Include registration/booking CTA.',
-  'saas-free-trial': ' Emphasize the free aspect. Highlight ease of getting started. Mention key features available in trial. Address common objections.',
-  'ecommerce-holiday': ' Incorporate holiday themes and emotions. Include seasonal gift-giving angles. Emphasize limited-time offers.',
-  'app-download': ' Emphasize ease of download. Highlight key app features. Include social proof or ratings. Make it feel essential.',
-  'newsletter-signup': ' Promise specific value (what they'll get). Make it feel exclusive. Keep the barrier low. Emphasize what they\'re missing.',
-  'retargeting': ' Acknowledge they\'ve shown interest before. Offer something new or remind of value. Include strong incentive.',
-  'partnership-announcement': ' Highlight the collaboration benefits. Make both parties look good. Emphasize what this means for customers.',
+  "product-launch": " Include a sense of newness and innovation. Emphasize the launch date and exclusivity. Build anticipation and excitement.",
+  "flash-sale": " Include a sense of urgency. Mention limited time or quantity. Use countdown-style language. Create FOMO (fear of missing out).",
+  "brand-awareness": " Focus on brand story and values. Build emotional connection. Prioritize memorability over conversion. Use distinctive brand voice.",
+  "event-promotion": " Include event details (date, time, location). Emphasize what is unique about this event. Include registration or booking CTA.",
+  "saas-free-trial": " Emphasize the free aspect. Highlight ease of getting started. Mention key features available in trial. Address common objections.",
+  "ecommerce-holiday": " Incorporate holiday themes and emotions. Include seasonal gift-giving angles. Emphasize limited-time offers.",
+  "app-download": " Emphasize ease of download. Highlight key app features. Include social proof or ratings. Make it feel essential.",
+  "newsletter-signup": " Promise specific value (what they will get). Make it feel exclusive. Keep the barrier low. Emphasize what they are missing.",
+  "retargeting": " Acknowledge they have shown interest before. Offer something new or remind of value. Include strong incentive.",
+  "partnership-announcement": " Highlight the collaboration benefits. Make both parties look good. Emphasize what this means for customers.",
 };
