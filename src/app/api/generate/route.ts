@@ -1,49 +1,44 @@
 /**
- * ─────────────────────────────────────────────────────────────
- * ADFORGE — /api/generate (Full Campaign Generation)
- * ─────────────────────────────────────────────────────────────
+ * AdForge — /api/generate (Full Campaign Generation)
  *
- * POST endpoint that generates a complete ad campaign.
- * API keys are read from environment variables on the server.
- *
- * REQUEST BODY:
- *   provider    — "gemini" | "deepseek" | "glm"
- *   productName — string (required)
- *   productDesc — string (required)
- *   tone        — string (default: "professional")
- *   audience    — string (optional)
- *   platforms   — string[] (default: ["instagram", "facebook"])
- *
- * RESPONSE:
- *   Success: { result: CampaignResult }
- *   Error:   { error: string }
- *
- * CampaignResult keys: headline, tagline, adCopy, callToAction,
- *                      targetAudience, platformVersions, keyBenefits
+ * POST endpoint that generates a complete ad campaign using the selected
+ * AI provider. Validates input with Zod, builds the prompt via
+ * buildGenerationPrompt, calls the AI, parses the JSON result and
+ * records token usage.
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { API_CONFIGS, getApiKey, TONE_MAP } from "@/lib/ai-providers";
+import { API_CONFIGS, getApiKey, mapCreativityToTemperature } from "@/lib/ai-providers";
+import { buildGenerationPrompt, TEMPLATE_PROMPTS } from "@/lib/prompt-templates";
+import { generateSchema } from "@/lib/validations";
+import { db } from "@/lib/db";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+
+    // ── Validate input ────────────────────────────────────────
+    const parsed = generateSchema.safeParse(body);
+    if (!parsed.success) {
+      const firstError = parsed.error.issues[0]?.message || "Invalid input";
+      return NextResponse.json({ error: firstError }, { status: 400 });
+    }
+
     const {
-      provider = "gemini",
+      provider,
       productName,
       productDesc,
       tone,
       audience,
       platforms,
-    } = body;
+      brandVoice,
+      language,
+      creativity,
+      templateId,
+      additionalInstructions,
+    } = parsed.data;
 
-    if (!productName || !productDesc) {
-      return NextResponse.json(
-        { error: "Product name and description are required." },
-        { status: 400 }
-      );
-    }
-
+    // ── Resolve API key ───────────────────────────────────────
     const apiKey = getApiKey(provider);
     if (!apiKey) {
       return NextResponse.json(
@@ -57,35 +52,46 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid provider." }, { status: 400 });
     }
 
-    const toneStr = TONE_MAP[tone] || TONE_MAP.professional;
-    const platformLabel =
-      platforms?.length > 0 ? platforms.join(", ") : "Instagram, Facebook";
-    const audienceNote = audience
-      ? `Target audience: ${audience}.`
-      : "Identify the most suitable target audience.";
+    // ── Map creativity to temperature ─────────────────────────
+    const temperature = mapCreativityToTemperature(creativity);
 
-    const prompt = `You are a senior advertising strategist and copywriter at a top-tier creative agency. Generate a complete, professional advertisement campaign for the following product.
+    // ── Resolve template additions ────────────────────────────
+    let templateAdditions: string | undefined;
+    if (templateId) {
+      // Check built-in templates first
+      if (TEMPLATE_PROMPTS[templateId]) {
+        templateAdditions = TEMPLATE_PROMPTS[templateId];
+      } else {
+        // Look up user-created template in database
+        const template = await db.template.findUnique({ where: { id: templateId } });
+        if (template) {
+          templateAdditions = template.promptTemplate;
+          // Increment usage count
+          await db.template.update({
+            where: { id: templateId },
+            data: { usageCount: { increment: 1 } },
+          });
+        }
+      }
+    }
 
-Product: ${productName}
-Description: ${productDesc}
-Tone: ${toneStr}
-Platforms: ${platformLabel}
-${audienceNote}
+    // ── Build prompt ──────────────────────────────────────────
+    const prompt = buildGenerationPrompt({
+      productName,
+      productDesc,
+      tone,
+      platforms,
+      audience,
+      brandVoice,
+      language,
+      templateAdditions,
+      additionalInstructions,
+    });
 
-Return ONLY a valid JSON object with exactly these keys (no extra text, no markdown):
-{
-  "headline": "A powerful, memorable main headline (max 12 words)",
-  "tagline": "A concise brand tagline or slogan (max 8 words)",
-  "adCopy": "Full advertisement body copy, 3-4 sentences, persuasive and on-brand",
-  "callToAction": "A strong, specific CTA phrase (max 6 words)",
-  "targetAudience": "Detailed target audience profile, 2-3 sentences covering demographics, psychographics, and behavior",
-  "platformVersions": "Brief adapted copy notes for each requested platform (1-2 sentences each)",
-  "keyBenefits": "3 key product benefits as a short list, each on a new line starting with •"
-}`;
-
+    // ── Call AI provider ──────────────────────────────────────
     const url = config.getUrl(apiKey);
     const headers = config.getHeaders(apiKey);
-    const reqBody = config.buildBody(prompt);
+    const reqBody = config.buildBody(prompt, temperature);
 
     const response = await fetch(url, {
       method: "POST",
@@ -96,17 +102,45 @@ Return ONLY a valid JSON object with exactly these keys (no extra text, no markd
     if (!response.ok) {
       const errData = await response.json().catch(() => ({}));
       return NextResponse.json(
-        { error: errData.error?.message || `API returned ${response.status}` },
+        { error: errData.error?.message || `AI provider returned ${response.status}` },
         { status: response.status }
       );
     }
 
     const data = await response.json();
     const raw = config.parseResponse(data);
-    const clean = raw.replace(/```json|```/g, "").trim();
-    const result = JSON.parse(clean);
+    const tokensUsed = config.parseTokenUsage(data);
 
-    return NextResponse.json({ result });
+    // ── Parse JSON from AI response ───────────────────────────
+    const clean = raw.replace(/```json\s*|```/g, "").trim();
+    let result: Record<string, string>;
+    try {
+      result = JSON.parse(clean);
+    } catch {
+      // If parsing fails, try to extract JSON from the text
+      const jsonMatch = clean.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        result = JSON.parse(jsonMatch[0]);
+      } else {
+        return NextResponse.json(
+          { error: "Failed to parse AI response as JSON. Please try again." },
+          { status: 500 }
+        );
+      }
+    }
+
+    // ── Record API usage ──────────────────────────────────────
+    const userId = "demo-user"; // TODO: replace with session user id after auth
+    await db.apiUsage.create({
+      data: {
+        userId,
+        provider,
+        endpoint: "generate",
+        tokensUsed,
+      },
+    });
+
+    return NextResponse.json({ result, provider, tokensUsed });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Something went wrong generating the campaign.";
     console.error("Generate error:", err);

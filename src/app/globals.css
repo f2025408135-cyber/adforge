@@ -1,8 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
-
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -144,17 +142,6 @@
   100% { background-position: -200% 0; }
 }
 
-/* Print styles */
-@media print {
-  header, .form-panel-wrapper, footer, .progress-bar-container,
-  .result-actions-bar, .card-action-btn, .count-indicator,
-  .history-sidebar, .history-overlay { display: none !important; }
-
-  body { background: white; color: black; font-size: 12pt; }
-
-  .output-section { padding: 0; }
-}
-
 /* Custom scrollbar */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
@@ -168,4 +155,21 @@
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #9a948e;
+}
+
+/* Print styles */
+@media print {
+  header, .form-panel-wrapper, footer, .progress-bar-container,
+  .result-actions-bar, .app-sidebar, .app-header, .no-print { display: none !important; }
+  body { background: white; color: black; font-size: 12pt; }
+}
+
+/* Pulse glow for generate button */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(200,96,42,0.3); }
+  50% { box-shadow: 0 0 20px 4px rgba(200,96,42,0.15); }
+}
+
+.pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
 }

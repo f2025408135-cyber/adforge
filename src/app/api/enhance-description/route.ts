@@ -1,14 +1,13 @@
 /**
- * AdForge — /api/regenerate (Single Section Regeneration)
+ * AdForge — /api/enhance-description
  *
- * POST endpoint that regenerates a single section of a campaign.
- * Uses SECTION_PROMPTS for focused prompts per section.
+ * POST endpoint that uses AI to enhance and enrich a product description,
+ * making it more compelling, specific, and benefit-driven for advertising.
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { API_CONFIGS, getApiKey, mapCreativityToTemperature } from "@/lib/ai-providers";
-import { SECTION_PROMPTS, TONE_MAP, LANGUAGE_MAP } from "@/lib/prompt-templates";
-import { regenerateSchema } from "@/lib/validations";
+import { API_CONFIGS, getApiKey } from "@/lib/ai-providers";
+import { enhanceDescSchema } from "@/lib/validations";
 import { db } from "@/lib/db";
 
 export async function POST(req: NextRequest) {
@@ -16,24 +15,13 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
 
     // ── Validate input ────────────────────────────────────────
-    const parsed = regenerateSchema.safeParse(body);
+    const parsed = enhanceDescSchema.safeParse(body);
     if (!parsed.success) {
       const firstError = parsed.error.issues[0]?.message || "Invalid input";
       return NextResponse.json({ error: firstError }, { status: 400 });
     }
 
-    const {
-      provider,
-      sectionKey,
-      productName,
-      productDesc,
-      tone,
-      platforms,
-      language,
-      creativity,
-      brandVoice,
-      additionalInstructions,
-    } = parsed.data;
+    const { provider, productName, productDesc } = parsed.data;
 
     // ── Resolve API key ───────────────────────────────────────
     const apiKey = getApiKey(provider);
@@ -49,30 +37,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid provider." }, { status: 400 });
     }
 
-    // ── Map creativity to temperature ─────────────────────────
-    const temperature = mapCreativityToTemperature(creativity);
-
-    // ── Build section-specific prompt ─────────────────────────
-    const promptFn = SECTION_PROMPTS[sectionKey];
-    if (!promptFn) {
-      return NextResponse.json({ error: "Invalid section key." }, { status: 400 });
-    }
-
-    const toneDesc = TONE_MAP[tone] || TONE_MAP.professional;
-    const prompt = promptFn({
-      name: productName,
-      desc: productDesc,
-      tone: toneDesc,
-      platforms: platforms.join(", ") || "Instagram, Facebook",
-      language,
-      brandVoice,
-      additionalInstructions,
-    });
+    // ── Build prompt ──────────────────────────────────────────
+    const prompt = `Improve and enrich this product description for advertising purposes. Make it more compelling, specific, and benefit-driven. Keep it concise (2-3 sentences). Product: ${productName}. Original description: ${productDesc}. Return ONLY the improved description.`;
 
     // ── Call AI provider ──────────────────────────────────────
     const url = config.getUrl(apiKey);
     const headers = config.getHeaders(apiKey);
-    const reqBody = config.buildBody(prompt, temperature);
+    const reqBody = config.buildBody(prompt, 0.7);
 
     const response = await fetch(url, {
       method: "POST",
@@ -91,7 +62,7 @@ export async function POST(req: NextRequest) {
     const data = await response.json();
     const raw = config.parseResponse(data);
     const tokensUsed = config.parseTokenUsage(data);
-    const text = raw.replace(/```json\s*|```/g, "").trim();
+    const enhancedDesc = raw.replace(/```json\s*|```/g, "").trim();
 
     // ── Record API usage ──────────────────────────────────────
     const userId = "demo-user"; // TODO: replace with session user id after auth
@@ -99,15 +70,15 @@ export async function POST(req: NextRequest) {
       data: {
         userId,
         provider,
-        endpoint: `regenerate-${sectionKey}`,
+        endpoint: "enhance-description",
         tokensUsed,
       },
     });
 
-    return NextResponse.json({ text, tokensUsed });
+    return NextResponse.json({ enhancedDesc, tokensUsed });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Something went wrong regenerating the section.";
-    console.error("Regenerate error:", err);
+    const message = err instanceof Error ? err.message : "Something went wrong enhancing the description.";
+    console.error("Enhance description error:", err);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
