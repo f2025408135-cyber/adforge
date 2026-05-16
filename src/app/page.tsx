@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Sparkles, Layers, GitCompare, Palette, Users, Download, ArrowRight, Zap, FileText, Brain } from 'lucide-react';
+import { Sparkles, GitCompare, Palette, Users, Download, ArrowRight, Zap, FileText, Brain } from 'lucide-react';
 
 const features = [
   {

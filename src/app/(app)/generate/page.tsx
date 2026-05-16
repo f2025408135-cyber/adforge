@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Copy, RefreshCw, Download, FileText, File, Check, Loader2, Wand2 } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Sparkles, Copy, RefreshCw, Loader2, Wand2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { countWords, getWordCountStatus, escapeHtml } from '@/lib/utils';
-import { API_CONFIGS, TONE_PREVIEWS, PLATFORM_INFO, creativityToTemperature } from '@/lib/ai-providers';
+import { API_CONFIGS, TONE_PREVIEWS, PLATFORM_INFO } from '@/lib/ai-providers';
 
 type Result = {
   headline: string;

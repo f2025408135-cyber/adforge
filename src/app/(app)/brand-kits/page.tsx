@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { Palette, Plus, Trash2, ArrowRight } from 'lucide-react';
+import { Palette, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface BrandKit {

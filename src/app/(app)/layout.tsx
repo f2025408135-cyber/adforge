@@ -4,7 +4,7 @@ import { useSession } from 'next-auth/react';
 import { redirect } from 'next/navigation';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Sparkles, LayoutDashboard, Wand2, Layers, LayoutGrid, Palette, BarChart3, Settings, LogOut } from 'lucide-react';
+import { Sparkles, LayoutDashboard, Wand2, Layers, LayoutGrid, Palette, BarChart3, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [

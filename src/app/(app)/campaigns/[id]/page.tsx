@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Star, Copy, Download, Edit, Trash2 } from 'lucide-react';
-import { formatDate, escapeHtml } from '@/lib/utils';
+import { ArrowLeft, Star, Copy } from 'lucide-react';
+import { formatDate } from '@/lib/utils';
 import { toast } from 'sonner';
 
 interface Campaign {

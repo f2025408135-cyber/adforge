@@ -8,8 +8,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { signUpSchema } from '@/lib/validations';
 import { Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import bcrypt from 'bcryptjs';
-
 export default function SignUpPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);

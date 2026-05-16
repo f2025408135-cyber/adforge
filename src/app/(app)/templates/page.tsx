@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
-import { FileText, Sparkles, ArrowRight } from 'lucide-react';
+import { useState } from 'react';
+import { FileText, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
 interface Template {
@@ -28,7 +27,6 @@ const defaultTemplates: Template[] = [
 ];
 
 export default function TemplatesPage() {
-  const { data: session } = useSession();
   const [templates, setTemplates] = useState<Template[]>(defaultTemplates);
 
   return (

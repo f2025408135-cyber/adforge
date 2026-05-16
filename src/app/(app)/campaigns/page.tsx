@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
-import { formatDate, getInitials } from '@/lib/utils';
-import { Star, Trash2, Copy, Archive, MoreHorizontal, Search } from 'lucide-react';
+import { formatDate } from '@/lib/utils';
+import { Star, Trash2, Copy, Search } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Campaign {
@@ -19,7 +19,6 @@ interface Campaign {
 }
 
 export default function CampaignsPage() {
-  const { data: session } = useSession();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
