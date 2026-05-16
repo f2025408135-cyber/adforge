@@ -1,0 +1,1454 @@
+================================================================================
+ADFORGE — ULTIMATE FULL-STACK BUILD PROMPT
+================================================================================
+Target AI: MiniMax M 2.5 (in Open Code)
+Project: AdForge — AI-Powered Advertisement Campaign Generator
+Date: May 2026
+================================================================================
+
+YOU ARE A SENIOR FULL-STACK DEVELOPER. BUILD THE COMPLETE ADFORGE PROJECT FROM
+SCRATCH AS A PRODUCTION-GRADE NEXT.JS APPLICATION. READ EVERY SINGLE SECTION
+BELOW CAREFULLY AND IMPLEMENT EVERYTHING EXACTLY AS SPECIFIED.
+
+================================================================================
+SECTION 1: PROJECT OVERVIEW
+================================================================================
+
+AdForge is an AI-powered advertisement campaign generator that takes a product
+brief as input and produces complete, ready-to-publish ad campaigns including
+headlines, taglines, ad copy, calls to action, target audience profiles, key
+benefits, and platform-specific adaptations. It supports multiple AI providers,
+has a professional editorial-style design system, and must feel like a premium
+SaaS product — not a toy or a hackathon project.
+
+The current prototype exists at https://thinkaiproject.netlify.app but needs a
+complete rebuild from the ground up with professional architecture, a proper
+backend, database persistence, authentication, real-time features, and a much
+richer feature set.
+
+================================================================================
+SECTION 2: TECH STACK (MANDATORY — DO NOT SUBSTITUTE)
+================================================================================
+
+Frontend:
+  - Next.js 16 (App Router) with TypeScript
+  - React 19
+  - Tailwind CSS 4
+  - shadcn/ui component library (already installed, use existing components)
+  - Framer Motion for animations
+  - Lucide React for icons
+  - Zustand for client-side state management
+  - React Hook Form + Zod for form validation
+  - TanStack React Query for server state management
+  - Sonner for toast notifications
+  - date-fns for date formatting
+
+Backend:
+  - Next.js API Routes (App Router — app/api/)
+  - Prisma ORM with SQLite (already configured at prisma/schema.prisma)
+  - NextAuth.js v4 for authentication (already in package.json)
+  - Server-side API key management via .env.local
+
+AI Providers (server-side only — keys NEVER reach the client):
+  - Google Gemini (model: gemini-1.5-flash) — env: GEMINI_API_KEY
+  - DeepSeek (model: deepseek-chat) — env: DEEPSEEK_API_KEY
+  - ZhipuAI GLM (model: glm-4) — env: GLM_API_KEY
+
+Already Installed Dependencies (DO NOT reinstall, use these):
+  - framer-motion, zustand, @tanstack/react-query, @tanstack/react-table
+  - react-hook-form, @hookform/resolvers, zod
+  - next-auth, prisma, @prisma/client
+  - sonner, date-fns, uuid, sharp
+  - recharts (for analytics charts)
+  - All shadcn/ui components (in src/components/ui/)
+  - tailwindcss-animate, tw-animate-css
+
+================================================================================
+SECTION 3: DESIGN SYSTEM (PROFESSIONAL, NO DARK MODE)
+================================================================================
+
+CRITICAL: This project uses a LIGHT-ONLY professional design system. There is
+NO dark mode and NO theme toggle. The entire app is light-themed with a warm,
+editorial, premium feel inspired by print magazines and creative agencies.
+
+Color Palette (CSS Custom Properties — set in globals.css :root):
+  --background: #faf8f5           (warm cream — main background)
+  --foreground: #1a1814           (rich ink — primary text)
+  --card: #ffffff                 (white — card backgrounds)
+  --card-foreground: #1a1814
+  --primary: #c8602a              (terracotta — CTAs, accents, links)
+  --primary-foreground: #ffffff
+  --secondary: #f0ece6            (warm gray — subtle backgrounds)
+  --secondary-foreground: #4a4640
+  --muted: #f0ece6
+  --muted-foreground: #9a948e     (muted text)
+  --accent: #f0e8e0
+  --accent-foreground: #1a1814
+  --destructive: #c83a2a          (error red)
+  --border: #e8e2da               (warm border)
+  --input: #e8e2da
+  --ring: #c8602a
+
+Custom Named Colors (also in Tailwind config via @theme inline):
+  cream: #faf8f5
+  ink: #1a1814
+  ink-soft: #4a4640
+  ink-muted: #9a948e
+  terracotta: #c8602a
+  terracotta-light: #f0e8e0
+  terracotta-dark: #a04820
+  border-soft: #f0ece6
+  status-green: #2d7a4f
+  status-orange: #c88a2a
+  status-red: #c83a2a
+
+Typography:
+  - Headings: font-serif (Playfair Display — via Google Fonts)
+  - Body: font-sans (DM Sans — via Google Fonts)
+  - Labels/tags: 11px, uppercase, tracking-wider, font-bold
+  - The combination of serif headings + sans-serif body creates the
+    editorial/premium feel. This is NON-NEGOTIABLE.
+
+Visual Style Rules:
+  - NO dark mode, NO theme toggle, NO next-themes dark variant
+  - Cards: white background, border border-border, rounded-lg, subtle shadow
+  - Hover states: shadow-md transition, border-color darkening
+  - Inputs: cream bg, border-border, focus: border-ink + ring + bg-white
+  - Buttons (primary): bg-terracotta, hover:bg-terracotta-dark, shadow on hover
+  - Buttons (secondary): border border-border, text-ink-soft, hover:border-ink
+  - Progress bar: terracotta gradient, indeterminate animation
+  - Skeleton loading: shimmer animation (cream gradient sweep)
+  - All transitions: smooth 150-300ms
+  - Print styles: hide header, form, footer, action bars; white bg, black text
+
+DO NOT use the default shadcn/ui dark theme. Override all dark mode styles.
+Remove the @custom-variant dark line from globals.css if present.
+The :root variables above are the ONLY theme.
+
+================================================================================
+SECTION 4: DATABASE SCHEMA (PRISMA — SQLITE)
+================================================================================
+
+Replace the existing prisma/schema.prisma with this complete schema:
+
+```prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  image         String?
+  passwordHash  String?   // for credentials auth
+  provider      String    @default("credentials") // credentials | google | github
+  role          String    @default("user") // user | admin
+  plan          String    @default("free") // free | pro | enterprise
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  campaigns     Campaign[]
+  brandKits     BrandKit[]
+  teamMemberships TeamMember[]
+  apiUsage      ApiUsage[]
+}
+
+model Campaign {
+  id            String    @id @default(cuid())
+  userId        String
+  productName   String
+  productDesc   String
+  tone          String    @default("professional")
+  audience      String?
+  platforms     String    @default("instagram,facebook") // comma-separated
+  provider      String    @default("gemini")
+  headline      String?
+  tagline       String?
+  adCopy        String?
+  callToAction  String?
+  targetAudience String?
+  keyBenefits   String?
+  platformVersions String?
+  status        String    @default("completed") // draft | completed | archived
+  isFavorite    Boolean   @default(false)
+  variants      Json?     // stores A/B test variants as JSON array
+  tags          String?   // comma-separated tags
+  rating        Int?      // 1-5 star rating
+  notes         String?   // user notes/feedback
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exports       Export[]
+  versions      CampaignVersion[]
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model CampaignVersion {
+  id            String    @id @default(cuid())
+  campaignId    String
+  version       Int
+  headline      String?
+  tagline       String?
+  adCopy        String?
+  callToAction  String?
+  targetAudience String?
+  keyBenefits   String?
+  platformVersions String?
+  changeSummary String?   // e.g. "Regenerated headline"
+  createdAt     DateTime  @default(now())
+
+  campaign      Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId])
+}
+
+model BrandKit {
+  id            String    @id @default(cuid())
+  userId        String
+  name          String
+  brandName     String
+  brandVoice    String    // brand tone/voice description
+  primaryColor  String?
+  secondaryColor String?
+  logo          String?   // URL or base64
+  guidelines    String?   // brand guidelines text
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model TeamMember {
+  id            String    @id @default(cuid())
+  userId        String
+  teamId        String    // for future team/org features
+  role          String    @default("viewer") // owner | editor | viewer
+  invitedAt     DateTime  @default(now())
+  acceptedAt    DateTime?
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Export {
+  id            String    @id @default(cuid())
+  campaignId    String
+  format        String    // pdf | docx | markdown | txt | png | json
+  filePath      String?
+  createdAt     DateTime  @default(now())
+
+  campaign      Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId])
+}
+
+model ApiUsage {
+  id            String    @id @default(cuid())
+  userId        String
+  provider      String
+  endpoint      String    // generate | regenerate | analyze
+  tokensUsed    Int       @default(0)
+  createdAt     DateTime  @default(now())
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model Template {
+  id            String    @id @default(cuid())
+  name          String
+  description   String
+  category      String    // product | service | event | saas | ecommerce
+  promptTemplate String   // the system prompt with {{variables}}
+  tone          String    @default("professional")
+  isPublic      Boolean   @default(true)
+  usageCount    Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+```
+
+After writing the schema, run: npx prisma db push
+
+================================================================================
+SECTION 5: AUTHENTICATION (NEXTAUTH.JS V4)
+================================================================================
+
+Implement NextAuth.js v4 with the following configuration:
+
+File: src/app/api/auth/[...nextauth]/route.ts
+
+Providers:
+  1. Credentials Provider:
+     - Sign in with email + password
+     - Registration with name, email, password
+     - Password hashing with bcrypt (or similar)
+     - Email validation
+
+  2. Google Provider (optional, configure via GOOGLE_CLIENT_ID/SECRET env vars)
+  3. GitHub Provider (optional, configure via GITHUB_ID/SECRET env vars)
+
+Auth Pages (create these as Next.js pages):
+  - /auth/signin — Custom sign-in page matching the AdForge design system
+  - /auth/signup — Registration page
+  - /auth/error — Error page for auth failures
+
+Session Strategy: JWT (database sessions not needed for MVP)
+
+Auth Middleware (middleware.ts):
+  - Protect all /dashboard/* and /api/* routes (except /api/auth/* and /api/health)
+  - Redirect unauthenticated users to /auth/signin
+  - Public pages: / (landing), /auth/*, /api/health
+
+Session Callback:
+  - Include user.id, user.role, user.plan in the JWT and session
+
+================================================================================
+SECTION 6: PROJECT FILE STRUCTURE
+================================================================================
+
+Build the project with this EXACT structure:
+
+```
+src/
+  app/
+    layout.tsx                    — Root layout (fonts, providers, metadata)
+    page.tsx                      — Landing page (marketing, not the app itself)
+    globals.css                   — Global styles + design system tokens
+    loading.tsx                   — Global loading state
+
+    (auth)/
+      signin/page.tsx             — Sign in page
+      signup/page.tsx             — Sign up page
+      layout.tsx                  — Auth layout (centered, minimal)
+
+    (app)/
+      layout.tsx                  — App layout (sidebar + header + main)
+      dashboard/
+        page.tsx                  — Dashboard home (stats, recent campaigns)
+      generate/
+        page.tsx                  — Main campaign generation page
+      campaigns/
+        page.tsx                  — All campaigns list (table view)
+        [id]/
+          page.tsx                — Single campaign detail view
+          edit/page.tsx           — Edit campaign
+      templates/
+        page.tsx                  — Campaign templates library
+      brand-kits/
+        page.tsx                  — Brand kit management
+      analytics/
+        page.tsx                  — Usage analytics page
+      settings/
+        page.tsx                  — User settings page
+
+    api/
+      auth/[...nextauth]/route.ts — NextAuth handler
+      generate/route.ts           — Full campaign generation
+      regenerate/route.ts         — Single section regeneration
+      campaigns/
+        route.ts                  — GET (list) + POST (create) campaigns
+        [id]/route.ts             — GET + PUT + DELETE single campaign
+        [id]/versions/route.ts    — GET version history for a campaign
+        [id]/favorite/route.ts    — PUT toggle favorite
+        [id]/archive/route.ts     — PUT toggle archive
+        [id]/rate/route.ts        — PUT set rating
+        [id]/duplicate/route.ts   — POST duplicate campaign
+      templates/
+        route.ts                  — GET all templates + POST create template
+        [id]/route.ts             — GET + PUT + DELETE template
+      brand-kits/
+        route.ts                  — GET + POST brand kits
+        [id]/route.ts             — GET + PUT + DELETE brand kit
+      analytics/
+        route.ts                  — GET usage analytics data
+      export/
+        route.ts                  — POST generate export file (PDF, DOCX, etc.)
+      health/route.ts             — GET health check endpoint
+
+  components/
+    ui/                           — shadcn/ui components (ALREADY EXISTS, use as-is)
+    layout/
+      app-sidebar.tsx             — Main app sidebar navigation
+      app-header.tsx              — Top header bar with user menu
+      breadcrumbs.tsx             — Breadcrumb navigation
+    campaign/
+      campaign-brief-form.tsx     — The main generation form
+      campaign-result-cards.tsx   — Result display cards
+      campaign-card.tsx           — Individual result card component
+      campaign-actions.tsx        — Export, copy, share action bar
+      campaign-skeleton.tsx       — Loading skeleton cards
+      tone-preview.tsx            — Tone preview component
+      word-counter.tsx            — Word/character count indicator
+      platform-selector.tsx       — Platform multi-select component
+      provider-switcher.tsx       — AI provider dropdown
+      a-b-variant-compare.tsx     — Side-by-side A/B variant comparison
+      campaign-version-history.tsx — Version history timeline
+    dashboard/
+      stats-cards.tsx             — Dashboard statistics cards
+      recent-campaigns.tsx        — Recent campaigns list
+      usage-chart.tsx             — Usage analytics chart (recharts)
+      quick-generate.tsx          — Quick generation widget
+    brand-kit/
+      brand-kit-form.tsx          — Create/edit brand kit form
+      brand-kit-card.tsx          — Brand kit display card
+    template/
+      template-card.tsx           — Template display card
+      template-preview.tsx        — Template detail preview
+    shared/
+      empty-state.tsx             — Reusable empty state component
+      confirmation-dialog.tsx     — Reusable confirmation dialog
+      search-input.tsx            — Search input with debounce
+      pagination-controls.tsx     — Table pagination
+      file-upload.tsx             — File upload component (for brand logos)
+
+  lib/
+    ai-providers.ts               — AI provider configs (ALREADY EXISTS, extend it)
+    db.ts                         — Prisma client singleton (ALREADY EXISTS)
+    utils.ts                      — Utility functions (ALREADY EXISTS)
+    auth.ts                       — NextAuth configuration
+    validations.ts                — Zod schemas for all API inputs
+    export-utils.ts               — PDF, DOCX, TXT, Markdown export logic
+    prompt-templates.ts           — System prompt templates for AI generation
+    rate-limit.ts                 — Simple rate limiting middleware
+
+  hooks/
+    use-mobile.ts                 — ALREADY EXISTS
+    use-toast.ts                  — ALREADY EXISTS
+    use-campaigns.ts              — React Query hook for campaigns CRUD
+    use-templates.ts              — React Query hook for templates
+    use-brand-kits.ts             — React Query hook for brand kits
+    use-analytics.ts              — React Query hook for analytics data
+    use-debounce.ts               — Debounce hook for search inputs
+
+  stores/
+    campaign-store.ts             — Zustand store for campaign generation state
+    ui-store.ts                   — Zustand store for UI state (sidebar, modals)
+```
+
+================================================================================
+SECTION 7: PAGES — DETAILED SPECIFICATIONS
+================================================================================
+
+------------------------------------------------------------------------
+7.1 LANDING PAGE (/)
+------------------------------------------------------------------------
+
+This is the PUBLIC marketing landing page — NOT the app itself. It should be
+stunning, professional, and conversion-focused.
+
+Sections (top to bottom):
+1. Hero Section:
+   - Large serif headline: "Campaign copy that actually converts."
+   - Subtext explaining AdForge
+   - Two CTAs: "Start Creating" (primary, goes to /auth/signup) and
+     "See How It Works" (secondary, scrolls to demo)
+   - Hero stats: "5x Faster" | "7 Output Sections" | "3 AI Models"
+   - Background: subtle gradient or pattern, not flat
+
+2. Features Grid:
+   - 6 feature cards in a 3x2 grid:
+     a. Multi-AI Provider Support (Gemini, DeepSeek, GLM)
+     b. 7-Section Campaign Output (headline through platform versions)
+     c. A/B Variant Testing (generate and compare variants)
+     d. Brand Kit Integration (consistent brand voice)
+     e. Real-time Collaboration (share campaigns with team)
+     f. Professional Export (PDF, DOCX, Markdown, TXT, JSON)
+   - Each card: icon, title, 2-line description
+
+3. How It Works:
+   - 3-step flow with numbered steps:
+     1. "Fill the Brief" — product name, description, tone, platforms
+     2. "AI Generates Campaign" — all 7 sections in one click
+     3. "Refine & Export" — regenerate sections, A/B test, export
+
+4. Pricing Section:
+   - 3 tiers: Free (5 campaigns/month), Pro ($19/mo, unlimited),
+     Enterprise (custom)
+   - Each with feature checklist
+
+5. CTA Section:
+   - "Ready to create campaigns that convert?"
+   - Primary CTA button
+
+6. Footer:
+   - Links, copyright, social icons
+
+Design: Use the cream/terracotta palette. Serif headings, sans-serif body.
+Animations: Framer Motion scroll-triggered reveals (fade-up, stagger).
+
+------------------------------------------------------------------------
+7.2 AUTH PAGES (/auth/signin, /auth/signup)
+------------------------------------------------------------------------
+
+Layout: Centered card on cream background. AdForge logo at top.
+
+Sign In:
+  - Email + Password fields
+  - "Sign In" button (primary, terracotta)
+  - "Or continue with" divider
+  - Google + GitHub OAuth buttons (if env vars set)
+  - "Don't have an account? Sign up" link
+
+Sign Up:
+  - Name + Email + Password + Confirm Password
+  - Password strength indicator (weak/fair/strong with color)
+  - "Create Account" button
+  - "Or continue with" divider
+  - Google + GitHub OAuth buttons
+  - "Already have an account? Sign in" link
+
+After auth: redirect to /dashboard
+
+------------------------------------------------------------------------
+7.3 DASHBOARD (/dashboard)
+------------------------------------------------------------------------
+
+Layout: App sidebar (left) + header (top) + main content area
+
+Header:
+  - AdForge logo (left)
+  - Breadcrumb navigation
+  - Search bar (center, with Command+K shortcut)
+  - Notification bell icon
+  - User avatar + dropdown (Profile, Settings, Sign Out)
+
+Sidebar Navigation:
+  - Dashboard (home icon)
+  - Generate (sparkles icon) — NEW campaign
+  - Campaigns (layers icon) — all campaigns
+  - Templates (layout-grid icon)
+  - Brand Kits (palette icon)
+  - Analytics (bar-chart icon)
+  - Settings (settings icon)
+  - Divider
+  - Usage info (campaigns used this month / limit)
+
+Dashboard Content:
+1. Welcome Section:
+   - "Welcome back, {name}" with today's date
+   - Quick stats row:
+     - Total Campaigns (number)
+     - This Month (number)
+     - Favorite Campaigns (number)
+     - AI Credits Used (number with /limit)
+
+2. Quick Generate Widget:
+   - Mini form: Product Name + Provider + Tone dropdown
+   - "Quick Generate" button
+   - Links to full generate page
+
+3. Recent Campaigns (last 5):
+   - Cards showing: product name, tone badge, provider badge, date
+   - Click to view full campaign
+   - "View All Campaigns" link
+
+4. Usage Chart (recharts):
+   - Line/bar chart showing campaigns generated per day/week
+   - Provider breakdown pie chart
+
+------------------------------------------------------------------------
+7.4 GENERATE PAGE (/generate) — THE CORE PAGE
+------------------------------------------------------------------------
+
+This is the main campaign generation interface. It must be EXCEPTIONAL.
+
+Layout: Two-column — Form (left, 420px sticky) + Results (right, scrollable)
+
+FORM (Left Panel — "Campaign Brief"):
+
+1. AI Provider Section:
+   - Dropdown: Gemini | DeepSeek | GLM (provider names only, not model names)
+   - Small badge showing "API key secured" with lock icon
+   - Provider description tooltip (e.g., "Fast and creative — best for social
+     media copy" for Gemini)
+
+2. Brand Kit (NEW FEATURE):
+   - Dropdown to select from saved brand kits
+   - When selected, auto-fills tone, voice description, and audience
+   - "Create New Brand Kit" link if none exist
+
+3. Campaign Template (NEW FEATURE):
+   - Dropdown to select from template library
+   - Templates: Product Launch, Flash Sale, Brand Awareness, Event Promo,
+     SaaS Free Trial, E-commerce Holiday, App Download, Newsletter Signup
+   - When selected, auto-adjusts prompt and tone for the template type
+
+4. Product Name:
+   - Text input, required
+   - Counter showing character count
+
+5. Product Description:
+   - Textarea, required, min 20 chars
+   - Character count indicator
+   - "AI Enhance" button that calls AI to improve the description
+     (new endpoint: POST /api/enhance-description)
+
+6. Campaign Tone:
+   - Visual tone selector (NOT a plain dropdown — use styled buttons/cards):
+     Professional | Luxury | Casual | Urgent | Humorous | Inspirational |
+     Playful | Minimalist | Bold | Empathetic | Technical | Storytelling
+   - Each tone shows a preview quote when selected (as italic text below)
+   - Previous tones: professional, luxury, casual, urgent, humorous, inspirational
+   - NEW tones: playful, minimalist, bold, empathetic, technical, storytelling
+
+7. Target Platforms:
+   - Visual multi-select with platform icons/logos:
+     Instagram | Facebook | Twitter/X | LinkedIn | TikTok | YouTube |
+     Billboard | Email | Google Ads | Pinterest | Snapchat
+   - Show only relevant platforms (no billboard for email campaigns, etc.)
+   - Each platform shows recommended content length when selected
+
+8. Target Audience:
+   - Text input with suggestions dropdown
+   - Preset audiences: "Gen Z (18-24)", "Millennials (25-35)",
+     "Parents", "Professionals", "Students", "Small Business Owners",
+     "Enterprise Decision Makers"
+   - Custom audience input
+
+9. Language (NEW FEATURE):
+   - Dropdown: English, Spanish, French, German, Chinese, Japanese,
+     Arabic, Portuguese, Hindi
+   - Campaign content generated in the selected language
+
+10. Creativity Level (NEW FEATURE):
+    - Slider: Conservative (0) ← → Creative (100)
+    - Default: 50
+    - Affects the temperature parameter sent to AI APIs
+
+11. Additional Instructions (NEW FEATURE):
+    - Optional textarea for custom instructions
+    - e.g., "Mention the 30-day money-back guarantee" or
+           "Avoid technical jargon"
+
+12. Generate Button:
+    - "Generate Campaign" with Sparkles icon
+    - Loading state: spinner + "Generating with {provider}..."
+    - Disabled when required fields empty
+    - Error state with clear error message
+
+RESULTS (Right Panel):
+
+1. Result Header Bar:
+   - Green dot + "{Product Name} Campaign"
+   - Generated timestamp, tone badge, provider badge, language badge
+   - Action buttons: Copy All, Markdown, TXT, PDF, DOCX (NEW), JSON (NEW),
+     Share (NEW — copy shareable link)
+
+2. Campaign Cards Grid (2 columns on desktop, 1 on mobile):
+   Each card has:
+   - Section label with icon
+   - Content display
+   - Regenerate button (with loading spinner)
+   - Copy button
+   - Word count indicator (green/orange/red dot + count + ideal range)
+   - Edit inline button (NEW — click to edit the text directly)
+
+   Sections:
+   a. Headline (full width, serif font, large, with terracotta left border)
+      - Ideal: under 12 words
+   b. Tagline (nested under headline card)
+      - Ideal: under 8 words
+   c. Ad Copy
+      - Ideal: 50-100 words
+   d. Call to Action (terracotta colored text, prominent)
+      - Ideal: under 6 words
+   e. Target Audience
+      - Ideal: 2-3 sentences
+   f. Key Benefits (bulleted list)
+   g. Platform Adaptations (full width)
+      - Shows adapted copy for each selected platform
+
+3. A/B Variant Section (NEW FEATURE):
+   - "Generate Variant" button
+   - Creates a second version (Variant B) of the entire campaign
+   - Side-by-side comparison view
+   - Toggle between Variant A and Variant B
+   - "Pick Winner" button to select preferred variant
+
+4. Save Campaign Section:
+   - "Save to Dashboard" button (saves to database)
+   - Tag input (add custom tags like "summer-sale", "product-launch")
+   - Rating: 1-5 stars
+   - Notes textarea
+
+5. Version History (NEW FEATURE):
+   - Collapsible timeline showing all versions of this campaign
+   - Each version: timestamp, change summary, provider used
+   - Click to view that version's content
+   - "Restore this version" button
+
+------------------------------------------------------------------------
+7.5 CAMPAIGNS PAGE (/campaigns)
+------------------------------------------------------------------------
+
+Full campaign management with TanStack Table.
+
+Features:
+1. Search bar with debounce (search by product name, tags)
+2. Filter dropdowns: Tone, Provider, Status, Date Range, Platform
+3. Sort by: Date, Name, Rating, Status
+4. Table columns:
+   - Checkbox (multi-select)
+   - Product Name
+   - Tone (badge)
+   - Provider (badge)
+   - Status (badge: draft/completed/archived)
+   - Rating (star display)
+   - Date Created
+   - Actions: View, Edit, Duplicate, Archive, Delete
+
+5. Bulk Actions (when items selected):
+   - Delete Selected
+   - Archive Selected
+   - Export Selected
+
+6. Pagination: 10/25/50 per page
+
+7. Empty State: "No campaigns yet. Create your first campaign!"
+
+------------------------------------------------------------------------
+7.6 CAMPAIGN DETAIL (/campaigns/[id])
+------------------------------------------------------------------------
+
+Full campaign view with all sections, plus:
+
+1. Campaign metadata sidebar:
+   - Created date, last modified
+   - Provider used, tone, platforms
+   - Tags, rating, notes (editable inline)
+   - Status toggle (completed/archived)
+
+2. Full campaign content display (same cards as generate page)
+
+3. Version History tab:
+   - Timeline of all changes
+   - Diff view between versions (highlight changes)
+
+4. Exports tab:
+   - List of past exports with format, date, download link
+
+5. Actions:
+   - Edit, Duplicate, Export, Share, Delete
+
+------------------------------------------------------------------------
+7.7 TEMPLATES PAGE (/templates)
+------------------------------------------------------------------------
+
+Template library for campaign starting points.
+
+Pre-built Templates (seeded in database):
+1. Product Launch — for new product announcements
+2. Flash Sale — urgent, time-limited promotions
+3. Brand Awareness — building brand recognition
+4. Event Promotion — webinars, conferences, launches
+5. SaaS Free Trial — software trial signup campaigns
+6. E-commerce Holiday — seasonal/holiday sales
+7. App Download — mobile app install campaigns
+8. Newsletter Signup — email list building
+9. Re-targeting — bringing back past visitors
+10. Partnership Announcement — collaboration/collab posts
+
+Each Template:
+  - Name, description, category, recommended tone
+  - Prompt template with variables like {{productName}}, {{description}}
+  - Usage count
+  - "Use Template" button → pre-fills the generate form
+
+Custom Templates:
+  - Users can save their own templates from generated campaigns
+  - "Save as Template" button on campaign detail page
+
+------------------------------------------------------------------------
+7.8 BRAND KITS PAGE (/brand-kits)
+------------------------------------------------------------------------
+
+Brand kit management for consistent brand voice across campaigns.
+
+Each Brand Kit:
+  - Name (e.g., "Nike Brand Voice")
+  - Brand Name
+  - Brand Voice description (textarea — detailed voice/tone guidelines)
+  - Primary Color (color picker)
+  - Secondary Color (color picker)
+  - Logo (image upload)
+  - Brand Guidelines (textarea — dos and don'ts)
+
+Features:
+  - CRUD operations (create, read, update, delete)
+  - "Use in Campaign" button → navigates to /generate with brand kit selected
+  - Visual preview of brand kit (colors, logo, voice summary)
+  - Maximum 3 brand kits on free plan, unlimited on pro
+
+------------------------------------------------------------------------
+7.9 ANALYTICS PAGE (/analytics)
+------------------------------------------------------------------------
+
+Usage analytics dashboard with recharts.
+
+Charts:
+1. Campaigns Over Time (line chart — daily/weekly/monthly)
+2. AI Provider Usage (pie chart — Gemini vs DeepSeek vs GLM)
+3. Tone Distribution (bar chart)
+4. Platform Distribution (horizontal bar chart)
+5. Average Word Counts per Section (grouped bar chart)
+6. Exports by Format (donut chart)
+
+Stats Cards:
+  - Total Campaigns Generated
+  - Total AI Credits Used
+  - Most Used Provider
+  - Most Used Tone
+  - Average Campaigns per Day
+  - Total Exports
+
+Date Range Selector: Last 7 days, 30 days, 90 days, All time
+
+------------------------------------------------------------------------
+7.10 SETTINGS PAGE (/settings)
+------------------------------------------------------------------------
+
+User settings with tabbed interface:
+
+Tab 1: Profile
+  - Name, Email, Avatar upload
+  - Change Password
+
+Tab 2: Preferences
+  - Default AI Provider
+  - Default Tone
+  - Default Platforms
+  - Language preference
+  - Auto-save campaigns toggle
+
+Tab 3: Subscription
+  - Current plan (Free/Pro/Enterprise)
+  - Usage this month (campaigns used / limit)
+  - Upgrade CTA
+
+Tab 4: API Keys (Admin Only)
+  - Configure API keys for each provider
+  - Test connection buttons
+
+================================================================================
+SECTION 8: API ENDPOINTS — DETAILED SPECIFICATIONS
+================================================================================
+
+------------------------------------------------------------------------
+8.1 POST /api/generate
+------------------------------------------------------------------------
+
+Request Body:
+{
+  provider: "gemini" | "deepseek" | "glm",
+  productName: string,
+  productDesc: string,
+  tone: string,
+  audience?: string,
+  platforms: string[],
+  brandVoice?: string,       // from brand kit
+  language?: string,          // "en" default
+  creativity?: number,        // 0-100, default 50
+  templateId?: string,        // optional template
+  additionalInstructions?: string
+}
+
+Process:
+1. Validate required fields
+2. Get server-side API key for the provider
+3. If templateId provided, load template prompt from database
+4. Build the system prompt incorporating:
+   - Product details
+   - Tone (mapped to full description)
+   - Platform-specific requirements
+   - Brand voice (if provided)
+   - Language instruction (if not English)
+   - Template structure (if provided)
+   - Additional instructions (if provided)
+5. Map creativity (0-100) to temperature:
+   - 0-33 → temperature 0.3 (conservative)
+   - 34-66 → temperature 0.7 (balanced)
+   - 67-100 → temperature 1.0 (creative)
+6. Call the selected AI provider API
+7. Parse the JSON response into structured sections
+8. Return the result
+
+Response:
+{
+  result: {
+    headline: string,
+    tagline: string,
+    adCopy: string,
+    callToAction: string,
+    targetAudience: string,
+    keyBenefits: string,
+    platformVersions: string
+  },
+  provider: string,
+  model: string,
+  tokensUsed: number
+}
+
+------------------------------------------------------------------------
+8.2 POST /api/regenerate
+------------------------------------------------------------------------
+
+Same as before but for individual sections. Takes sectionKey + context,
+returns just the regenerated text for that section.
+
+------------------------------------------------------------------------
+8.3 POST /api/enhance-description (NEW)
+------------------------------------------------------------------------
+
+Request Body:
+{ provider, productName, productDesc }
+
+Returns: { enhancedDesc: string } — AI-improved product description
+
+------------------------------------------------------------------------
+8.4 GET /api/campaigns
+------------------------------------------------------------------------
+
+Query Params: page, limit, search, tone, provider, status, sortBy, sortOrder
+
+Returns paginated list of user's campaigns with metadata.
+
+------------------------------------------------------------------------
+8.5 POST /api/campaigns
+------------------------------------------------------------------------
+
+Saves a generated campaign to the database.
+
+Request Body: full campaign data + userId
+
+Returns: saved campaign with id
+
+------------------------------------------------------------------------
+8.6 GET/PUT/DELETE /api/campaigns/[id]
+------------------------------------------------------------------------
+
+Standard CRUD for a single campaign. PUT updates specified fields.
+
+------------------------------------------------------------------------
+8.7 POST /api/campaigns/[id]/duplicate
+------------------------------------------------------------------------
+
+Duplicates a campaign with a new ID and "Copy" suffix on the product name.
+
+------------------------------------------------------------------------
+8.8 PUT /api/campaigns/[id]/favorite
+------------------------------------------------------------------------
+
+Toggles the isFavorite boolean.
+
+------------------------------------------------------------------------
+8.9 PUT /api/campaigns/[id]/rate
+------------------------------------------------------------------------
+
+Sets the rating (1-5).
+
+------------------------------------------------------------------------
+8.10 POST /api/export (NEW — PROPER EXPORT)
+------------------------------------------------------------------------
+
+Request Body:
+{ campaignId, format: "pdf" | "docx" | "markdown" | "txt" | "json" }
+
+Process:
+- PDF: Use a server-side PDF generation library (e.g., @react-pdf/renderer
+  or puppeteer-core or jspdf) to create a properly formatted PDF document
+  with the AdForge branding, campaign sections, and professional layout
+- DOCX: Use docx npm package to create a Word document
+- Markdown: Generate structured markdown string
+- TXT: Plain text with section headers
+- JSON: Raw JSON data
+
+Returns: { downloadUrl: string } — temporary signed URL to download the file
+
+------------------------------------------------------------------------
+8.11 GET /api/analytics
+------------------------------------------------------------------------
+
+Query Params: startDate, endDate, granularity (day/week/month)
+
+Returns aggregated analytics data for charts.
+
+------------------------------------------------------------------------
+8.12 GET/POST /api/templates
+------------------------------------------------------------------------
+
+List all templates or create a new custom template.
+
+------------------------------------------------------------------------
+8.13 GET/POST /api/brand-kits
+------------------------------------------------------------------------
+
+List user's brand kits or create a new one.
+
+------------------------------------------------------------------------
+8.14 GET /api/health
+------------------------------------------------------------------------
+
+Returns { status: "ok", timestamp, version }
+
+================================================================================
+SECTION 9: AI PROVIDER CONFIGURATION (EXTEND EXISTING)
+================================================================================
+
+The file src/lib/ai-providers.ts already exists with configs for Gemini,
+DeepSeek, and GLM. EXTEND it (do not replace) with the following additions:
+
+1. Add temperature parameter support:
+   Each provider's buildBody function should accept an optional temperature
+   parameter. If not provided, default to:
+     - Gemini: 0.7
+     - DeepSeek: 0.7
+     - GLM: 0.7
+
+2. Add token counting:
+   After each API call, extract the token usage from the response and
+   return it alongside the generated text.
+
+3. Provider descriptions for the UI:
+   - Gemini: "Fast and creative — ideal for social media and short-form copy"
+   - DeepSeek: "Thoughtful and detailed — best for long-form and analytical copy"
+   - GLM: "Versatile and precise — great for multilingual and structured output"
+
+4. The EXACT API URLs (DO NOT CHANGE THESE):
+   - Gemini: https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={API_KEY}
+   - DeepSeek: https://api.deepseek.com/chat/completions
+   - GLM: https://open.bigmodel.cn/api/paas/v4/chat/completions
+
+5. The EXACT model names used in API calls (DO NOT CHANGE):
+   - Gemini: gemini-1.5-flash (passed in URL, not body)
+   - DeepSeek: "deepseek-chat" (passed in body)
+   - GLM: "glm-4" (passed in body)
+
+6. The dropdown in the UI should show ONLY provider names: "Gemini",
+   "DeepSeek", "GLM" — NOT the model names.
+
+================================================================================
+SECTION 10: PROMPT ENGINEERING
+================================================================================
+
+The system prompt for campaign generation must be carefully crafted.
+
+File: src/lib/prompt-templates.ts
+
+Main Generation Prompt Template:
+
+```
+You are a senior advertising strategist and master copywriter at a top-tier
+creative agency with 20+ years of experience crafting campaigns for Fortune 500
+brands. Your task is to generate a complete, professional advertisement campaign.
+
+PRODUCT: {{productName}}
+DESCRIPTION: {{productDesc}}
+TONE: {{toneDescription}}
+PLATFORMS: {{platformList}}
+TARGET AUDIENCE: {{audience}}
+LANGUAGE: {{language}}
+{{#brandVoice}}BRAND VOICE: {{brandVoice}}{{/brandVoice}}
+{{#additionalInstructions}}ADDITIONAL INSTRUCTIONS: {{additionalInstructions}}{{/additionalInstructions}}
+
+Generate a campaign with EXACTLY these 7 sections. Return ONLY a valid JSON
+object with these keys (no markdown, no code blocks, no extra text):
+
+{
+  "headline": "A powerful, memorable main headline that stops the scroll. Max 12 words. Must be emotionally compelling and benefit-driven.",
+  "tagline": "A concise brand tagline or slogan. Max 8 words. Should be memorable and encapsulate the brand promise.",
+  "adCopy": "Full advertisement body copy. 3-5 sentences, persuasive and on-brand. Must include at least one specific benefit and one emotional trigger.",
+  "callToAction": "A strong, specific CTA phrase that creates urgency. Max 6 words. Use action verbs.",
+  "targetAudience": "Detailed target audience profile in 2-3 sentences covering demographics (age, income, location), psychographics (values, aspirations), and behavioral patterns (purchase habits, media consumption).",
+  "keyBenefits": "3 key product benefits as bullet points. Each starts with a strong verb. Format: \u2022 [Benefit 1]\\n\u2022 [Benefit 2]\\n\u2022 [Benefit 3]",
+  "platformVersions": "Adapted copy notes for each requested platform. 1-2 sentences per platform explaining how the core message adapts to that platform's format, audience behavior, and character limits."
+}
+
+IMPORTANT RULES:
+- The headline MUST be attention-grabbing and specific (no generic phrases)
+- The CTA MUST use strong action verbs (Get, Start, Join, Discover, Unlock)
+- Ad copy should tell a story, not just list features
+- Platform adaptations must reference platform-specific best practices
+- Maintain the {{toneDescription}} tone consistently across ALL sections
+- Be original and creative — avoid cliches and overused marketing phrases
+- If the language is not English, generate ALL content in that language
+```
+
+Section-Specific Regeneration Prompts (extend existing SECTION_PROMPTS):
+Keep the existing ones and add proper context-aware regeneration that considers
+the rest of the campaign for consistency.
+
+Template-Specific Prompt Additions:
+Each template type adds specific instructions to the main prompt. For example:
+- Flash Sale: "Include a sense of urgency. Mention limited time/quantity.
+  Use countdown-style language."
+- Brand Awareness: "Focus on brand story and values. Build emotional
+  connection. Prioritize memorability over conversion."
+
+================================================================================
+SECTION 11: KEY INTERACTIONS & UX DETAILS
+================================================================================
+
+1. GENERATION FLOW:
+   - User fills form → clicks Generate
+   - Top progress bar activates (terracotta, indeterminate animation)
+   - Skeleton loading cards appear with shimmer animation
+   - Results fade in section by section with staggered animation
+   - Progress bar completes
+   - Auto-scroll to results
+   - Toast notification: "Campaign generated successfully!"
+
+2. REGENERATE INDIVIDUAL SECTION:
+   - Click refresh icon on any card
+   - Card shows inline spinner, other cards unaffected
+   - New content fades in when ready
+   - Word count indicator updates
+   - Toast: "Headline regenerated"
+
+3. INLINE EDITING (NEW):
+   - Click pencil icon on any card
+   - Content becomes an editable textarea
+   - Save/Cancel buttons appear
+   - On save: updates the state, shows toast "Updated"
+   - Creates a new version in version history
+
+4. A/B VARIANTS (NEW):
+   - Click "Generate Variant" in results header
+   - Second generation call with slightly varied prompt
+   - Results load in a comparison view
+   - Toggle between A and B
+   - "Pick Winner" saves the chosen variant
+
+5. SAVE TO DASHBOARD:
+   - Click "Save Campaign" button
+   - If not logged in: prompt to sign in
+   - If logged in: saves to database with success toast
+   - Campaign now appears in /campaigns
+
+6. EXPORT FLOW:
+   - Click export format button
+   - Server generates file
+   - Browser downloads the file
+   - Export record saved to database
+   - Toast: "Campaign exported as PDF"
+
+7. SEARCH (Command+K):
+   - Global search modal
+   - Searches campaigns, templates, brand kits
+   - Keyboard navigation
+   - Quick actions: "Generate new campaign", "View campaigns"
+
+8. KEYBOARD SHORTCUTS:
+   - Cmd/Ctrl + K: Open search
+   - Cmd/Ctrl + Enter: Generate campaign (when on generate page)
+   - Cmd/Ctrl + S: Save current campaign
+   - Cmd/Ctrl + E: Export current campaign
+   - Esc: Close modals/dialogs
+
+9. RESPONSIVE DESIGN:
+   - Desktop (1024px+): Two-column layout (form + results)
+   - Tablet (768-1023px): Stacked layout, collapsible form
+   - Mobile (<768px): Single column, bottom sheet for form
+
+10. LOADING STATES:
+    - Initial page load: skeleton placeholders
+    - API calls: spinner + progress bar + skeleton content
+    - Background data: subtle loading indicators
+    - Never show a blank page — always show structure first
+
+11. ERROR HANDLING:
+    - API errors: red toast with retry button
+    - Network errors: banner with "Check your connection"
+    - Rate limit: "Please wait a moment" with countdown
+    - Invalid input: inline validation messages below fields
+    - 404: Custom error page matching design system
+
+12. TOAST NOTIFICATIONS:
+    - Success: green with checkmark
+    - Error: red with X icon
+    - Info: terracotta with info icon
+    - Auto-dismiss after 4 seconds
+    - Stack from bottom-right
+
+================================================================================
+SECTION 12: ENVIRONMENT VARIABLES
+================================================================================
+
+File: .env.local
+
+```env
+# Database
+DATABASE_URL="file:./dev.db"
+
+# NextAuth
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=your-secret-key-change-in-production
+
+# AI Provider API Keys (server-side only)
+GEMINI_API_KEY=
+DEEPSEEK_API_KEY=
+GLM_API_KEY=
+
+# OAuth (optional)
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GITHUB_ID=
+GITHUB_SECRET=
+
+# App
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+NEXT_PUBLIC_APP_NAME=AdForge
+```
+
+================================================================================
+SECTION 13: IMPLEMENTATION ORDER (BUILD SEQUENCE)
+================================================================================
+
+Build the project in THIS EXACT ORDER. Complete each phase fully before moving
+to the next. Test each phase before proceeding.
+
+PHASE 1: Foundation (Day 1)
+  1.1 Initialize project structure (all directories and empty files)
+  1.2 Set up Prisma schema and run db push
+  1.3 Set up globals.css with complete design system
+  1.4 Set up root layout with fonts and providers
+  1.5 Create the API utility files (lib/*)
+
+PHASE 2: Authentication (Day 1-2)
+  2.1 Set up NextAuth with credentials provider
+  2.2 Create sign-in and sign-up pages
+  2.3 Set up auth middleware
+  2.4 Test: register, login, protected routes
+
+PHASE 3: App Shell (Day 2)
+  3.1 Create app layout with sidebar and header
+  3.2 Create sidebar navigation with active states
+  3.3 Create header with search, notifications, user menu
+  3.4 Create breadcrumbs component
+  3.5 Test: navigation between all pages
+
+PHASE 4: Core Generation (Day 2-3)
+  4.1 Extend ai-providers.ts with temperature + token counting
+  4.2 Create prompt-templates.ts
+  4.3 Build /api/generate endpoint (full version)
+  4.4 Build /api/regenerate endpoint
+  4.5 Build /api/enhance-description endpoint
+  4.6 Create the Campaign Brief Form component
+  4.7 Create Result Cards component
+  4.8 Create the Generate page layout
+  4.9 Test: full generation flow end-to-end
+
+PHASE 5: Campaign Management (Day 3-4)
+  5.1 Build /api/campaigns CRUD endpoints
+  5.2 Create useCampaigns hook (React Query)
+  5.3 Build Campaigns list page with TanStack Table
+  5.4 Build Campaign detail page
+  5.5 Implement save/load from database
+  5.6 Implement search, filter, sort
+  5.7 Implement duplicate, archive, delete
+  5.8 Test: full campaign CRUD lifecycle
+
+PHASE 6: Advanced Features (Day 4-5)
+  6.1 Build version history system
+  6.2 Build inline editing with version tracking
+  6.3 Build A/B variant generation and comparison
+  6.4 Build brand kit CRUD
+  6.5 Build template library
+  6.6 Build /api/export with PDF + DOCX generation
+  6.7 Build analytics page with charts
+  6.8 Test: all advanced features
+
+PHASE 7: Landing Page & Polish (Day 5-6)
+  7.1 Build the landing page with all sections
+  7.2 Build settings page
+  7.3 Add Framer Motion animations throughout
+  7.4 Add keyboard shortcuts (Cmd+K search, etc.)
+  7.5 Add responsive design breakpoints
+  7.6 Add error boundaries and error pages
+  7.7 Add loading states for every async operation
+  7.8 Add toast notifications everywhere
+  7.9 Test: complete user journey from landing to export
+
+PHASE 8: Final QA (Day 6)
+  8.1 Cross-browser testing
+  8.2 Mobile responsive testing
+  8.3 Performance optimization (lazy loading, code splitting)
+  8.4 Accessibility audit (ARIA, keyboard nav, contrast)
+  8.5 Error handling edge cases
+  8.6 Seed database with templates and sample data
+
+================================================================================
+SECTION 14: CRITICAL RULES & CONSTRAINTS
+================================================================================
+
+1. NO DARK MODE — The entire app is light-themed only. Do NOT add a theme
+   toggle or dark mode support. Remove any dark mode CSS or next-themes
+   dark variant from globals.css.
+
+2. API KEYS ARE SERVER-SIDE ONLY — API keys must NEVER be sent to the
+   client. They are stored in .env.local and used only in API route handlers.
+   The frontend never sees or handles API keys.
+
+3. PROVIDER NAMES IN UI — The model dropdown shows ONLY provider names:
+   "Gemini", "DeepSeek", "GLM". The exact model names (gemini-1.5-flash,
+   deepseek-chat, glm-4) are used internally in API calls and never shown
+   to users.
+
+4. PROFESSIONAL UI — Every pixel must feel premium. No generic bootstrap-
+   looking components. Use the design system consistently. Serif headings,
+   sans-serif body. Terracotta accents. Cream backgrounds. No shadows that
+   are too heavy. Subtle and refined.
+
+5. TYPE SAFETY — Everything in TypeScript. No "any" types unless absolutely
+   necessary. Use Zod for runtime validation on API routes.
+
+6. ERROR HANDLING — Every API call must have try/catch. Every user action
+   must provide feedback (toast, inline error, loading state). Never show
+   a raw error stack to the user.
+
+7. PERFORMANCE — Use React.lazy for heavy components. Use React Query's
+   caching. Debounce search inputs. Optimize images. Use Next.js Image
+   component for any images.
+
+8. ACCESSIBILITY — All interactive elements must be keyboard accessible.
+   Use proper ARIA labels. Maintain color contrast ratios. Focus management
+   for modals and dialogs.
+
+9. MOBILE FIRST — Every page must work perfectly on mobile. The generate
+   page uses a stacked layout on mobile with a collapsible form.
+
+10. DO NOT REINVENT THE WHEEL — Use shadcn/ui components that are already
+    installed. Use the existing lib/utils.ts, lib/db.ts, lib/ai-providers.ts.
+    Extend, don't replace.
+
+================================================================================
+SECTION 15: EXISTING CODE REFERENCE (DO NOT DELETE, EXTEND)
+================================================================================
+
+The following files ALREADY EXIST in the project and should be EXTENDED
+(not replaced from scratch):
+
+1. src/lib/ai-providers.ts — Has API_CONFIGS, getApiKey(), TONE_MAP,
+   SECTION_PROMPTS. Add temperature support, token counting, provider
+   descriptions, and new tone mappings.
+
+2. src/lib/db.ts — Prisma client singleton. Keep as-is.
+
+3. src/lib/utils.ts — cn() utility. Keep as-is.
+
+4. src/app/api/generate/route.ts — Has working generation logic.
+   Extend with temperature, language, brand voice, templates support.
+
+5. src/app/api/regenerate/route.ts — Has working regeneration logic.
+   Extend with context-aware regeneration.
+
+6. src/app/globals.css — Has the design system tokens and animations.
+   Extend with additional styles needed. DO NOT add dark mode.
+
+7. src/components/ui/* — All shadcn/ui components. Use as-is.
+
+8. src/hooks/use-mobile.ts — Already exists. Use as-is.
+
+9. src/hooks/use-toast.ts — Already exists. Use as-is.
+
+10. package.json — Has all dependencies listed. Do NOT add new packages
+    unless absolutely necessary (e.g., docx for DOCX export, bcrypt for
+    password hashing).
+
+================================================================================
+SECTION 16: SEED DATA
+================================================================================
+
+After building everything, seed the database with:
+
+1. Template entries (10 templates as listed in Section 7.7)
+2. A demo user account:
+   - Email: demo@adforge.app
+   - Password: demo1234
+   - Name: Demo User
+3. 3 sample campaigns for the demo user
+4. 1 sample brand kit for the demo user
+
+Create a seed script: prisma/seed.ts
+Add to package.json: "prisma:seed": "bun prisma/seed.ts"
+
+================================================================================
+SECTION 17: DEPLOYMENT CONFIGURATION
+================================================================================
+
+1. next.config.ts — Ensure output: "standalone" for production builds
+2. Add a Caddyfile for reverse proxy (already exists, update as needed)
+3. Environment variables checklist for production:
+   - DATABASE_URL (production SQLite path)
+   - NEXTAUTH_URL (production URL)
+   - NEXTAUTH_SECRET (strong random secret)
+   - GEMINI_API_KEY, DEEPSEEK_API_KEY, GLM_API_KEY
+4. Build command: bun run build
+5. Start command: NODE_ENV=production bun .next/standalone/server.js
+
+================================================================================
+SECTION 18: WHAT MAKES THIS "OG" (EXTRAORDINARY)
+================================================================================
+
+Beyond the features above, these details make the difference between "good"
+and "OG":
+
+1. MICRO-INTERACTIONS:
+   - Button hover: subtle scale + shadow expansion
+   - Card hover: shadow transition + slight translateY(-1px)
+   - Input focus: border color change + ring + background change
+   - Toggle: smooth slide with spring physics
+   - Generate button: pulsing glow effect when idle, spinner when loading
+   - Success states: brief checkmark animation before content appears
+
+2. ANIMATION CHOREOGRAPHY:
+   - Page transitions: Framer Motion layout animations
+   - Card appearance: staggered fade-up (50ms delay between cards)
+   - Sidebar: smooth expand/collapse with spring physics
+   - Modals: scale from center with backdrop blur
+   - Toast: slide in from right, slide out after timeout
+
+3. POLISH DETAILS:
+   - Custom scrollbar matching the design system
+   - Smooth scroll-to-section after generation
+   - Skeleton loading that matches the exact layout of real content
+   - Progress bar that accelerates as completion nears
+   - Empty states with illustrations (use SVG or emoji-based)
+   - Loading text that changes: "Analyzing your product..." →
+     "Crafting headline..." → "Polishing copy..." → "Almost there..."
+   - Generation time display: "Generated in 3.2s"
+
+4. INTELLIGENT DEFAULTS:
+   - Auto-detect language from product description
+   - Suggest tone based on product category
+   - Remember last-used provider and tone
+   - Auto-save drafts every 30 seconds while editing
+
+5. DELIGHTFUL TOUCHES:
+   - Confetti animation on first campaign generation
+   - Milestone celebrations: "10th campaign generated!"
+   - Keyboard shortcut hints on hover
+   - Contextual tips: "Tip: Try the Urgent tone for flash sales"
+   - Provider comparison: small tooltip showing each provider's strength
+
+================================================================================
+END OF PROMPT
+================================================================================
+
+Now BUILD IT. Start with Phase 1 and work through every phase systematically.
+Do NOT skip any phase. Do NOT leave any feature incomplete. Do NOT add dark
+mode. Make it the most OG project possible. Professional UI, wholesome backend,
+complete A-Z. Every pixel intentional. Every feature working. Ship it.
+================================================================================
