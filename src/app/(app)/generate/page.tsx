@@ -388,12 +388,11 @@ export default function GeneratePage() {
                     </div>
                     <div style={{
                       padding: 16,
-                      fontSize: 14,
+                      fontSize: section.key === 'headline' ? 20 : 14,
                       color: 'var(--ink)',
                       lineHeight: 1.7,
                       fontFamily: section.isHeadline && section.key === 'headline' ? 'var(--font-serif)' : undefined,
                       fontWeight: section.key === 'headline' ? 700 : undefined,
-                      fontSize: section.key === 'headline' ? 20 : undefined,
                     }}>
                       {escapeHtml(text)}
                     </div>
