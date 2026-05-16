@@ -1,52 +1,55 @@
+/**
+ * ─────────────────────────────────────────────────────────────
+ * ADFORGE — /api/generate (Full Campaign Generation)
+ * ─────────────────────────────────────────────────────────────
+ *
+ * POST endpoint that generates a complete ad campaign.
+ * API keys are read from environment variables on the server.
+ *
+ * REQUEST BODY:
+ *   provider    — "gemini" | "deepseek" | "glm"
+ *   productName — string (required)
+ *   productDesc — string (required)
+ *   tone        — string (default: "professional")
+ *   audience    — string (optional)
+ *   platforms   — string[] (default: ["instagram", "facebook"])
+ *
+ * RESPONSE:
+ *   Success: { result: CampaignResult }
+ *   Error:   { error: string }
+ *
+ * CampaignResult keys: headline, tagline, adCopy, callToAction,
+ *                      targetAudience, platformVersions, keyBenefits
+ */
+
 import { NextRequest, NextResponse } from "next/server";
-
-const API_CONFIGS: Record<string, {
-  getUrl: (key: string) => string;
-  getHeaders: (key: string) => Record<string, string>;
-  buildBody: (prompt: string) => object;
-  parseResponse: (data: any) => string;
-}> = {
-  gemini: {
-    getUrl: (key) => `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`,
-    getHeaders: () => ({ "Content-Type": "application/json" }),
-    buildBody: (prompt) => ({ contents: [{ parts: [{ text: prompt }] }] }),
-    parseResponse: (data) => data.candidates?.[0]?.content?.parts?.[0]?.text || "",
-  },
-  deepseek: {
-    getUrl: () => "https://api.deepseek.com/chat/completions",
-    getHeaders: (key) => ({ "Content-Type": "application/json", Authorization: `Bearer ${key}` }),
-    buildBody: (prompt) => ({ model: "deepseek-chat", messages: [{ role: "user", content: prompt }] }),
-    parseResponse: (data) => data.choices?.[0]?.message?.content || "",
-  },
-  glm: {
-    getUrl: () => "https://open.bigmodel.cn/api/paas/v4/chat/completions",
-    getHeaders: (key) => ({ "Content-Type": "application/json", Authorization: `Bearer ${key}` }),
-    buildBody: (prompt) => ({ model: "glm-4", messages: [{ role: "user", content: prompt }] }),
-    parseResponse: (data) => data.choices?.[0]?.message?.content || "",
-  },
-};
-
-function getApiKey(provider: string): string | null {
-  const envMap: Record<string, string> = {
-    gemini: process.env.GEMINI_API_KEY || "",
-    deepseek: process.env.DEEPSEEK_API_KEY || "",
-    glm: process.env.GLM_API_KEY || "",
-  };
-  return envMap[provider] || null;
-}
+import { API_CONFIGS, getApiKey, TONE_MAP } from "@/lib/ai-providers";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { provider = "gemini", productName, productDesc, tone, audience, platforms } = body;
+    const {
+      provider = "gemini",
+      productName,
+      productDesc,
+      tone,
+      audience,
+      platforms,
+    } = body;
 
     if (!productName || !productDesc) {
-      return NextResponse.json({ error: "Product name and description are required." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Product name and description are required." },
+        { status: 400 }
+      );
     }
 
     const apiKey = getApiKey(provider);
     if (!apiKey) {
-      return NextResponse.json({ error: `No API key configured for ${provider}. Please set the environment variable.` }, { status: 500 });
+      return NextResponse.json(
+        { error: `No API key configured for ${provider}. Please set the environment variable in .env.local.` },
+        { status: 500 }
+      );
     }
 
     const config = API_CONFIGS[provider];
@@ -54,23 +57,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid provider." }, { status: 400 });
     }
 
-    const toneMap: Record<string, string> = {
-      professional: "professional and authoritative",
-      luxury: "luxurious and premium, evoking exclusivity",
-      casual: "casual, warm, and conversational",
-      urgent: "urgent and action-driven with strong CTAs",
-      humorous: "witty, clever, and gently humorous",
-      inspirational: "inspirational, emotional, and aspirational",
-    };
-
-    const platformLabel = platforms?.length > 0 ? platforms.join(", ") : "Instagram, Facebook";
-    const audienceNote = audience ? `Target audience: ${audience}.` : "Identify the most suitable target audience.";
+    const toneStr = TONE_MAP[tone] || TONE_MAP.professional;
+    const platformLabel =
+      platforms?.length > 0 ? platforms.join(", ") : "Instagram, Facebook";
+    const audienceNote = audience
+      ? `Target audience: ${audience}.`
+      : "Identify the most suitable target audience.";
 
     const prompt = `You are a senior advertising strategist and copywriter at a top-tier creative agency. Generate a complete, professional advertisement campaign for the following product.
 
 Product: ${productName}
 Description: ${productDesc}
-Tone: ${toneMap[tone] || "professional and authoritative"}
+Tone: ${toneStr}
 Platforms: ${platformLabel}
 ${audienceNote}
 
@@ -104,16 +102,14 @@ Return ONLY a valid JSON object with exactly these keys (no extra text, no markd
     }
 
     const data = await response.json();
-    let raw = config.parseResponse(data);
+    const raw = config.parseResponse(data);
     const clean = raw.replace(/```json|```/g, "").trim();
     const result = JSON.parse(clean);
 
     return NextResponse.json({ result });
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Something went wrong generating the campaign.";
     console.error("Generate error:", err);
-    return NextResponse.json(
-      { error: err.message || "Something went wrong generating the campaign." },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

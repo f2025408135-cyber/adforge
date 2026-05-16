@@ -12,13 +12,9 @@ import {
   ChevronDown,
   Sparkles,
   Layers,
-  Cpu,
-  Eye,
-  EyeOff,
   Check,
   Printer,
   ArrowRight,
-  Target,
   Users,
   Star,
   LayoutGrid,
@@ -95,15 +91,17 @@ const PLATFORMS = [
   { value: "billboard", label: "Billboard", icon: "🏙️" },
 ];
 
-const CARD_SECTIONS = [
-  { key: "headline", label: "Headline", icon: Sparkles, full: true, accent: true, style: "headline" as const },
-  { key: "tagline", label: "Tagline", icon: Layers, style: "tagline" as const, nested: true },
-  { key: "adCopy", label: "Ad Copy", icon: FileText, style: "body" as const },
-  { key: "callToAction", label: "Call to Action", icon: ArrowRight, style: "cta" as const },
-  { key: "targetAudience", label: "Target Audience", icon: Users, style: "body" as const },
-  { key: "keyBenefits", label: "Key Benefits", icon: Star, style: "body" as const },
-  { key: "platformVersions", label: "Platform Adaptations", icon: LayoutGrid, full: true, style: "body" as const },
-];
+// NOTE: CARD_SECTIONS was previously defined but unused. If the next developer wants to
+// refactor the result cards into a data-driven map, this structure can be re-introduced:
+// const CARD_SECTIONS = [
+//   { key: "headline", label: "Headline", icon: Sparkles, full: true, accent: true },
+//   { key: "tagline", label: "Tagline", icon: Layers, nested: true },
+//   { key: "adCopy", label: "Ad Copy", icon: FileText },
+//   { key: "callToAction", label: "Call to Action", icon: ArrowRight },
+//   { key: "targetAudience", label: "Target Audience", icon: Users },
+//   { key: "keyBenefits", label: "Key Benefits", icon: Star },
+//   { key: "platformVersions", label: "Platform Adaptations", icon: LayoutGrid, full: true },
+// ];
 
 // ── Helpers ──
 function countWords(str: string): number {
@@ -182,6 +180,7 @@ export default function Home() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [copiedAll, setCopiedAll] = useState(false);
+  const [copiedMarkdown, setCopiedMarkdown] = useState(false);
 
   const outputRef = useRef<HTMLDivElement>(null);
 
@@ -324,7 +323,10 @@ export default function Home() {
   const exportMarkdown = useCallback(() => {
     if (!result) return;
     const md = `# ${resultProductName} Campaign\n\n## Headline\n\n${result.headline}\n\n## Tagline\n\n${result.tagline}\n\n## Ad Copy\n\n${result.adCopy}\n\n## Call to Action\n\n${result.callToAction}\n\n## Target Audience\n\n${result.targetAudience}\n\n## Key Benefits\n\n${result.keyBenefits}\n\n## Platform Adaptations\n\n${result.platformVersions}\n`;
-    navigator.clipboard.writeText(md);
+    navigator.clipboard.writeText(md).then(() => {
+      setCopiedMarkdown(true);
+      setTimeout(() => setCopiedMarkdown(false), 1500);
+    });
   }, [result, resultProductName]);
 
   const exportTXT = useCallback(() => {
@@ -655,8 +657,8 @@ export default function Home() {
                     onClick={exportMarkdown}
                     className="flex items-center gap-1.5 px-3 py-1.5 border border-border rounded text-xs font-semibold uppercase tracking-wider text-ink-soft hover:border-ink hover:text-ink transition-colors"
                   >
-                    <FileText className="w-3.5 h-3.5" />
-                    Markdown
+                    {copiedMarkdown ? <Check className="w-3.5 h-3.5" /> : <FileText className="w-3.5 h-3.5" />}
+                    {copiedMarkdown ? "Copied!" : "Markdown"}
                   </button>
                   <button
                     onClick={exportTXT}

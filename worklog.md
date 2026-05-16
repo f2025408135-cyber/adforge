@@ -59,3 +59,26 @@ Stage Summary:
 - No client-side API key handling - all via server routes
 - Responsive design for mobile and desktop
 - Print CSS for PDF export
+
+---
+Task ID: 4
+Agent: Main Agent
+Task: Code audit, cleanup, and handoff preparation for next developer
+
+Work Log:
+- Full codebase audit revealed 16 issues (duplicated code, dead imports, unused constants, missing feedback, etc.)
+- Created /src/lib/ai-providers.ts — shared module for API_CONFIGS, getApiKey, TONE_MAP, SECTION_PROMPTS
+- Refactored both API routes to import from shared module (eliminated ~54 lines of duplication)
+- Removed dead imports from page.tsx: Cpu, Eye, EyeOff, Target
+- Replaced unused CARD_SECTIONS constant with commented-out reference for future refactoring
+- Added "Copied!" feedback to Markdown export button (was silently copying before)
+- Converted /api/route.ts from dead Hello World to useful health-check endpoint
+- Improved error typing in API routes (err: unknown with instanceof check)
+- All changes pass lint cleanly
+
+Stage Summary:
+- Zero duplication across backend code
+- Zero dead code in frontend
+- All interactive buttons provide user feedback
+- Clean, well-documented codebase ready for handoff
+- Key file: /src/lib/ai-providers.ts is the single source of truth for provider config
