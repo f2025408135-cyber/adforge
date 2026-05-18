@@ -1,0 +1,16 @@
+{
+  "name": "adforge-cli",
+  "version": "1.0.0",
+  "description": "AdForge — AI-Powered Ad Campaign Generator CLI",
+  "type": "module",
+  "main": "adforge.js",
+  "bin": {
+    "adforge": "./adforge.js"
+  },
+  "scripts": {
+    "start": "node adforge.js",
+    "interactive": "node adforge.js -i"
+  },
+  "keywords": ["ai", "advertising", "marketing", "cli", "deepseek"],
+  "license": "MIT"
+}
