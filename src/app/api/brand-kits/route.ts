@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { db, isDbAvailable } from "@/lib/db";
 import { brandKitSchema } from "@/lib/validations";
 
 const userId = "demo-user"; // TODO: replace with session user id after auth
@@ -14,6 +14,9 @@ const userId = "demo-user"; // TODO: replace with session user id after auth
 // ─── GET /api/brand-kits ───────────────────────────────────────
 export async function GET() {
   try {
+    if (!isDbAvailable()) {
+      return NextResponse.json({ brandKits: [] });
+    }
     const brandKits = await db.brandKit.findMany({
       where: { userId },
       orderBy: { updatedAt: "desc" },
@@ -30,6 +33,9 @@ export async function GET() {
 // ─── POST /api/brand-kits ──────────────────────────────────────
 export async function POST(req: NextRequest) {
   try {
+    if (!isDbAvailable()) {
+      return NextResponse.json({ error: "Database unavailable." }, { status: 503 });
+    }
     const body = await req.json();
 
     const parsed = brandKitSchema.safeParse(body);

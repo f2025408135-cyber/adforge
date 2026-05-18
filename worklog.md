@@ -120,3 +120,26 @@ Stage Summary:
 - Provider selector shows "V4 Flash" model name under DeepSeek
 - Timeouts increased for reasoning model's thinking time
 - Production build clean
+
+---
+Task ID: netlify-deploy-prep
+Agent: Super Z (main)
+Task: Make app Netlify-deployable with graceful DB fallback
+
+Work Log:
+- Rewrote src/lib/db.ts with lazy Proxy pattern — PrismaClient only created on first access
+- Added isDbAvailable() function — returns false if DB can't initialize (serverless env)
+- Updated 11 API route files to add isDbAvailable() checks:
+  - GET endpoints: return empty arrays/stubs when DB unavailable
+  - POST/PUT/DELETE endpoints: return 503 when DB unavailable
+- Core AI endpoints (generate, regenerate, enhance) already handle DB failures gracefully
+- Updated health endpoint to report database status
+- Created netlify.toml with prisma generate + build command and @netlify/plugin-nextjs
+- Installed @netlify/plugin-nextjs as dev dependency
+- Rebuilt successfully — all routes compile clean
+
+Stage Summary:
+- App is fully Netlify-ready — AI generation works without database
+- Database features (campaigns, templates, brand-kits, analytics) gracefully degrade to empty states
+- netlify.toml configured with prisma generate + build command
+- DeepSeek V4 Flash API key must be set as DEEPSEEK_API_KEY env var on Netlify dashboard

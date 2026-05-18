@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { db, isDbAvailable } from "@/lib/db";
 import { campaignCreateSchema } from "@/lib/validations";
 import { Prisma } from "@prisma/client";
 
@@ -15,6 +15,12 @@ const userId = "demo-user"; // TODO: replace with session user id after auth
 // ─── GET /api/campaigns ────────────────────────────────────────
 export async function GET(req: NextRequest) {
   try {
+    if (!isDbAvailable()) {
+      return NextResponse.json({
+        campaigns: [],
+        pagination: { page: 1, limit: 10, total: 0, totalPages: 0 },
+      });
+    }
     const { searchParams } = new URL(req.url);
     const page = Math.max(1, Number(searchParams.get("page")) || 1);
     const limit = Math.min(100, Math.max(1, Number(searchParams.get("limit")) || 10));
@@ -76,6 +82,12 @@ export async function GET(req: NextRequest) {
 // ─── POST /api/campaigns ───────────────────────────────────────
 export async function POST(req: NextRequest) {
   try {
+    if (!isDbAvailable()) {
+      return NextResponse.json(
+        { error: "Database unavailable. Campaign saving requires a database connection." },
+        { status: 503 }
+      );
+    }
     const body = await req.json();
 
     // ── Validate input ────────────────────────────────────────

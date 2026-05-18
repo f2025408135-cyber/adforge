@@ -5,7 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { db, isDbAvailable } from "@/lib/db";
 import { z } from "zod";
 
 const userId = "demo-user"; // TODO: replace with session user id after auth
@@ -19,6 +19,9 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    if (!isDbAvailable()) {
+      return NextResponse.json({ error: "Database unavailable." }, { status: 503 });
+    }
     const { id } = await params;
 
     const existing = await db.campaign.findUnique({ where: { id } });

@@ -6,12 +6,15 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { db, isDbAvailable } from "@/lib/db";
 import { templateSchema } from "@/lib/validations";
 
 // ─── GET /api/templates ────────────────────────────────────────
 export async function GET(req: NextRequest) {
   try {
+    if (!isDbAvailable()) {
+      return NextResponse.json({ templates: [] });
+    }
     const { searchParams } = new URL(req.url);
     const category = searchParams.get("category") || "";
     const tone = searchParams.get("tone") || "";
@@ -36,6 +39,9 @@ export async function GET(req: NextRequest) {
 // ─── POST /api/templates ───────────────────────────────────────
 export async function POST(req: NextRequest) {
   try {
+    if (!isDbAvailable()) {
+      return NextResponse.json({ error: "Database unavailable." }, { status: 503 });
+    }
     const body = await req.json();
 
     const parsed = templateSchema.safeParse(body);

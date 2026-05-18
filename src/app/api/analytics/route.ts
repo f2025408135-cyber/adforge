@@ -7,12 +7,25 @@
  */
 
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { db, isDbAvailable } from "@/lib/db";
 
 const userId = "demo-user"; // TODO: replace with session user id after auth
 
 export async function GET() {
   try {
+    if (!isDbAvailable()) {
+      return NextResponse.json({
+        overview: {
+          totalCampaigns: 0, favoriteCount: 0, draftCount: 0,
+          completedCount: 0, archivedCount: 0, brandKitCount: 0,
+          averageRating: 0, totalTokensUsed: 0,
+        },
+        providerDistribution: [],
+        toneDistribution: [],
+        recentUsage: [],
+        tokenUsage: [],
+      });
+    }
     // ── Campaign counts ───────────────────────────────────────
     const [
       totalCampaigns,

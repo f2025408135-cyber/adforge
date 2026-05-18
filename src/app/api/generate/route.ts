@@ -61,13 +61,17 @@ export async function POST(req: NextRequest) {
       if (TEMPLATE_PROMPTS[templateId]) {
         templateAdditions = TEMPLATE_PROMPTS[templateId];
       } else {
-        const template = await db.template.findUnique({ where: { id: templateId } });
-        if (template) {
-          templateAdditions = template.promptTemplate;
-          await db.template.update({
-            where: { id: templateId },
-            data: { usageCount: { increment: 1 } },
-          });
+        try {
+          const template = await db.template?.findUnique({ where: { id: templateId } });
+          if (template) {
+            templateAdditions = template.promptTemplate;
+            await db.template?.update({
+              where: { id: templateId },
+              data: { usageCount: { increment: 1 } },
+            });
+          }
+        } catch {
+          // DB unavailable — skip custom template lookup
         }
       }
     }
