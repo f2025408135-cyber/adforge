@@ -7,7 +7,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { API_CONFIGS, getApiKey, mapCreativityToTemperature } from "@/lib/ai-providers";
-import { SECTION_PROMPTS, TONE_MAP, LANGUAGE_MAP } from "@/lib/prompt-templates";
+import { SECTION_PROMPTS, TONE_MAP } from "@/lib/prompt-templates";
 import { regenerateSchema } from "@/lib/validations";
 import { db } from "@/lib/db";
 
@@ -15,7 +15,6 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    // ── Validate input ────────────────────────────────────────
     const parsed = regenerateSchema.safeParse(body);
     if (!parsed.success) {
       const firstError = parsed.error.issues[0]?.message || "Invalid input";
@@ -35,24 +34,21 @@ export async function POST(req: NextRequest) {
       additionalInstructions,
     } = parsed.data;
 
-    // ── Resolve API key ───────────────────────────────────────
     const apiKey = getApiKey(provider);
     if (!apiKey) {
       return NextResponse.json(
-        { error: `No API key configured for ${provider}. Please set the environment variable in .env.local.` },
+        { error: `No API key configured for ${provider}. Please add the key to .env.local on the server.` },
         { status: 500 }
       );
     }
 
     const config = API_CONFIGS[provider];
     if (!config) {
-      return NextResponse.json({ error: "Invalid provider." }, { status: 400 });
+      return NextResponse.json({ error: "Invalid provider selected." }, { status: 400 });
     }
 
-    // ── Map creativity to temperature ─────────────────────────
     const temperature = mapCreativityToTemperature(creativity);
 
-    // ── Build section-specific prompt ─────────────────────────
     const promptFn = SECTION_PROMPTS[sectionKey];
     if (!promptFn) {
       return NextResponse.json({ error: "Invalid section key." }, { status: 400 });
@@ -69,7 +65,6 @@ export async function POST(req: NextRequest) {
       additionalInstructions,
     });
 
-    // ── Call AI provider ──────────────────────────────────────
     const url = config.getUrl(apiKey);
     const headers = config.getHeaders(apiKey);
     const reqBody = config.buildBody(prompt, temperature);
@@ -78,13 +73,15 @@ export async function POST(req: NextRequest) {
       method: "POST",
       headers,
       body: JSON.stringify(reqBody),
+      signal: AbortSignal.timeout(30000),
     });
 
     if (!response.ok) {
       const errData = await response.json().catch(() => ({}));
+      const errMsg = errData.error?.message || errData.message || `AI provider returned ${response.status}`;
       return NextResponse.json(
-        { error: errData.error?.message || `AI provider returned ${response.status}` },
-        { status: response.status }
+        { error: errMsg },
+        { status: response.status >= 500 ? 502 : response.status }
       );
     }
 
@@ -93,16 +90,21 @@ export async function POST(req: NextRequest) {
     const tokensUsed = config.parseTokenUsage(data);
     const text = raw.replace(/```json\s*|```/g, "").trim();
 
-    // ── Record API usage ──────────────────────────────────────
-    const userId = "demo-user"; // TODO: replace with session user id after auth
-    await db.apiUsage.create({
-      data: {
-        userId,
-        provider,
-        endpoint: `regenerate-${sectionKey}`,
-        tokensUsed,
-      },
-    });
+    if (!text) {
+      return NextResponse.json(
+        { error: "AI returned an empty response. Please try again." },
+        { status: 502 }
+      );
+    }
+
+    try {
+      const userId = "demo-user";
+      await db.apiUsage.create({
+        data: { userId, provider, endpoint: `regenerate-${sectionKey}`, tokensUsed },
+      });
+    } catch {
+      // Non-critical
+    }
 
     return NextResponse.json({ text, tokensUsed });
   } catch (err: unknown) {

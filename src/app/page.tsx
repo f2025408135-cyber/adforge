@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Toaster, toast } from "sonner";
 import {
@@ -163,9 +163,9 @@ const SECTION_ICONS: Record<string, React.ReactNode> = {
   platformVersions: <Layers className="w-3.5 h-3.5" />,
 };
 
-const PROVIDERS = [
-  { id: "gemini", label: "Gemini" },
+const ALL_PROVIDERS = [
   { id: "deepseek", label: "DeepSeek" },
+  { id: "gemini", label: "Gemini" },
   { id: "glm", label: "GLM" },
 ];
 
@@ -254,6 +254,27 @@ function GenerateTab() {
 
   const dbTemplates = templatesQuery.data?.templates ?? [];
   const brandKits = brandKitsQuery.data?.brandKits ?? [];
+
+  // ── Fetch available providers from backend ──────────────────
+  const [availableProviders, setAvailableProviders] = useState<{ id: string; label: string; available: boolean }[]>([]);
+  const [providersLoaded, setProvidersLoaded] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/providers")
+      .then((r) => r.json())
+      .then((data) => {
+        const providers = data.providers || [];
+        setAvailableProviders(providers);
+        setProvidersLoaded(true);
+        // Auto-select first available provider if current one isn't available
+        const currentAvailable = providers.find((p: any) => p.id === store.provider && p.available);
+        if (!currentAvailable && providers.length > 0) {
+          const firstAvailable = providers.find((p: any) => p.available);
+          if (firstAvailable) store.setProvider(firstAvailable.id);
+        }
+      })
+      .catch(() => setProvidersLoaded(true));
+  }, []);
 
   // ── AI Enhance Description ────────────────────────────────────
   const handleEnhance = useCallback(async () => {
@@ -489,25 +510,38 @@ function GenerateTab() {
             <div>
               <Label className="text-[11px] uppercase tracking-wider font-bold text-ink-soft mb-2 block">
                 AI Provider
+                <span className="ml-1.5 text-[9px] font-normal text-ink-muted">(API keys pre-configured on server)</span>
               </Label>
               <div className="flex gap-2">
-                {PROVIDERS.map((p) => (
-                  <button
-                    key={p.id}
-                    onClick={() => store.setProvider(p.id)}
-                    className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-all border ${
-                      store.provider === p.id
-                        ? "bg-ink text-white border-ink"
-                        : "bg-white text-ink-soft border-border hover:border-ink/30"
-                    }`}
-                  >
-                    {p.label}
-                  </button>
-                ))}
+                {ALL_PROVIDERS.map((p) => {
+                  const isAvailable = availableProviders.find((ap) => ap.id === p.id)?.available ?? false;
+                  return (
+                    <button
+                      key={p.id}
+                      onClick={() => isAvailable && store.setProvider(p.id)}
+                      disabled={!isAvailable}
+                      className={`relative flex-1 px-3 py-2 rounded-md text-sm font-medium transition-all border ${
+                        store.provider === p.id
+                          ? "bg-ink text-white border-ink"
+                          : isAvailable
+                          ? "bg-white text-ink-soft border-border hover:border-ink/30"
+                          : "bg-white/50 text-ink-muted/40 border-border/50 cursor-not-allowed"
+                      }`}
+                    >
+                      <span className="flex items-center justify-center gap-1.5">
+                        <span className={`w-1.5 h-1.5 rounded-full ${isAvailable ? "bg-status-green" : "bg-ink-muted/30"}`} />
+                        {p.label}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
               <p className="text-xs text-ink-muted mt-2 leading-relaxed">
                 {PROVIDER_DESCRIPTIONS[store.provider]}
               </p>
+              {!providersLoaded && (
+                <p className="text-[10px] text-ink-muted mt-1">Checking provider availability...</p>
+              )}
             </div>
 
             <Separator />
@@ -773,36 +807,70 @@ function GenerateTab() {
         {/* Empty State */}
         {!store.result && !store.loading && (
           <div className="flex items-center justify-center min-h-[60vh]">
-            <div className="text-center border-2 border-dashed border-border rounded-xl p-12 max-w-md">
-              <Sparkles className="w-10 h-10 text-ink-muted mx-auto mb-4" />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.4 }}
+              className="text-center border-2 border-dashed border-terracotta/20 rounded-xl p-12 max-w-md bg-white/50"
+            >
+              <motion.div
+                animate={{ rotate: [0, 5, -5, 0] }}
+                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                className="inline-block mb-4"
+              >
+                <Sparkles className="w-12 h-12 text-terracotta/60" />
+              </motion.div>
               <h3 className="font-serif text-xl font-semibold text-ink mb-2">Your campaign awaits</h3>
-              <p className="text-sm text-ink-muted leading-relaxed">
-                Fill in the campaign brief on the left and hit Generate to create your AI-powered ad campaign.
+              <p className="text-sm text-ink-muted leading-relaxed mb-4">
+                Fill in the campaign brief on the left and hit <strong className="text-terracotta">Generate</strong> to create your AI-powered ad campaign.
               </p>
-            </div>
+              <div className="flex flex-wrap justify-center gap-2">
+                {["Headline", "Tagline", "Ad Copy", "CTA", "Audience", "Benefits", "Platforms"].map((label, i) => (
+                  <motion.span
+                    key={label}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 * i, duration: 0.3 }}
+                    className="px-2.5 py-1 text-[10px] font-medium rounded-full bg-terracotta-light text-terracotta-dark border border-terracotta/10"
+                  >
+                    {label}
+                  </motion.span>
+                ))}
+              </div>
+            </motion.div>
           </div>
         )}
 
         {/* Loading State */}
         {store.loading && !store.result && (
           <div className="space-y-4">
-            {/* Skeleton header bar */}
+            {/* Animated loading header */}
             <div className="flex items-center gap-3 p-4 bg-white border border-border rounded-lg">
-              <Skeleton className="w-3 h-3 rounded-full" />
-              <Skeleton className="h-5 w-40" />
-              <Skeleton className="h-5 w-20 ml-auto" />
+              <Loader2 className="w-4 h-4 animate-spin text-terracotta" />
+              <span className="font-serif font-semibold text-ink">Generating with {capitalizeFirst(store.provider)}...</span>
+              <Badge variant="outline" className="text-[10px] border-terracotta text-terracotta ml-auto animate-pulse">
+                AI Working
+              </Badge>
             </div>
-            {/* Skeleton cards */}
+            {/* Skeleton cards with staggered shimmer */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {Array.from({ length: 7 }).map((_, i) => (
-                <Card key={i} className={`p-5 ${i === 0 || i === 6 ? "lg:col-span-2" : ""}`}>
-                  <Skeleton className="h-4 w-24 mb-3" />
-                  <div className="space-y-2">
-                    <Skeleton className="h-5 w-full skeleton-shimmer" />
-                    <Skeleton className="h-5 w-3/4 skeleton-shimmer" />
-                    {i === 0 && <Skeleton className="h-5 w-1/2 skeleton-shimmer" />}
-                  </div>
-                </Card>
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.08 * i }}
+                  className={i === 0 || i === 6 ? "lg:col-span-2" : ""}
+                >
+                  <Card className="p-5">
+                    <Skeleton className="h-4 w-24 mb-3" />
+                    <div className="space-y-2">
+                      <Skeleton className="h-5 w-full skeleton-shimmer" />
+                      <Skeleton className="h-5 w-3/4 skeleton-shimmer" />
+                      {i === 0 && <Skeleton className="h-5 w-1/2 skeleton-shimmer" />}
+                    </div>
+                  </Card>
+                </motion.div>
               ))}
             </div>
           </div>
@@ -812,8 +880,17 @@ function GenerateTab() {
         {store.result && (
           <div className="space-y-4">
             {/* Result Header Bar */}
-            <div className="flex items-center gap-3 p-4 bg-white border border-border rounded-lg flex-wrap">
-              <span className="w-2.5 h-2.5 rounded-full bg-status-green" />
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-center gap-3 p-4 bg-white border border-border rounded-lg flex-wrap"
+            >
+              <motion.span
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", stiffness: 300, damping: 15 }}
+                className="w-2.5 h-2.5 rounded-full bg-status-green"
+              />
               <span className="font-serif font-semibold text-ink">{store.resultProductName}</span>
               <span className="text-ink-muted text-sm">Generated</span>
               <Badge variant="outline" className="text-xs border-terracotta text-terracotta">
@@ -839,7 +916,7 @@ function GenerateTab() {
                   JSON
                 </Button>
               </div>
-            </div>
+            </motion.div>
 
             {/* Campaign Cards Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -1249,7 +1326,7 @@ function CampaignsTab() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="__all__">All Providers</SelectItem>
-            {PROVIDERS.map((p) => (
+            {ALL_PROVIDERS.map((p) => (
               <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>
             ))}
           </SelectContent>

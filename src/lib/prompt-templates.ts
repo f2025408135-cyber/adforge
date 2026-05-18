@@ -157,7 +157,7 @@ export const TEMPLATE_PROMPTS: Record<string, string> = {
  * Provider descriptions for UI display
  */
 export const PROVIDER_DESCRIPTIONS: Record<string, string> = {
-  gemini: "Fast and creative — ideal for social media and short-form copy",
-  deepseek: "Thoughtful and detailed — best for long-form and analytical copy",
-  glm: "Versatile and precise — great for multilingual and structured output",
+  deepseek: "DeepSeek V3 — Powerful reasoning and creative copy with excellent JSON compliance",
+  gemini: "Gemini 2.0 Flash — Fast, creative, and versatile for all ad formats",
+  glm: "GLM-4 Flash — Precise, multilingual, and structured output specialist",
 };

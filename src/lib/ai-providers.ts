@@ -3,6 +3,12 @@
  *
  * SINGLE SOURCE OF TRUTH for all AI provider configs.
  * Both /api/generate and /api/regenerate import from here.
+ *
+ * Models updated to current supported versions:
+ * - DeepSeek: deepseek-chat (DeepSeek-V3-0324)
+ * - Gemini: gemini-2.0-flash
+ * - GLM: glm-4-flash (latest available)
+ * - Z-AI: Built-in SDK provider (no key needed)
  */
 
 export const API_CONFIGS: Record<
@@ -15,19 +21,6 @@ export const API_CONFIGS: Record<
     parseTokenUsage: (data: unknown) => number;
   }
 > = {
-  gemini: {
-    getUrl: (key) =>
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`,
-    getHeaders: () => ({ "Content-Type": "application/json" }),
-    buildBody: (prompt, temperature = 0.7) => ({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { temperature },
-    }),
-    parseResponse: (data: any) =>
-      data.candidates?.[0]?.content?.parts?.[0]?.text || "",
-    parseTokenUsage: (data: any) =>
-      data.usageMetadata?.totalTokenCount || 0,
-  },
   deepseek: {
     getUrl: () => "https://api.deepseek.com/chat/completions",
     getHeaders: (key) => ({
@@ -36,13 +29,30 @@ export const API_CONFIGS: Record<
     }),
     buildBody: (prompt, temperature = 0.7) => ({
       model: "deepseek-chat",
-      messages: [{ role: "user", content: prompt }],
+      messages: [
+        { role: "system", content: "You are a senior advertising strategist and master copywriter at a top-tier creative agency. Always respond with valid JSON when asked. Be creative, specific, and on-brand." },
+        { role: "user", content: prompt },
+      ],
       temperature,
+      max_tokens: 2048,
     }),
     parseResponse: (data: any) =>
       data.choices?.[0]?.message?.content || "",
     parseTokenUsage: (data: any) =>
       (data.usage?.prompt_tokens || 0) + (data.usage?.completion_tokens || 0),
+  },
+  gemini: {
+    getUrl: (key) =>
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
+    getHeaders: () => ({ "Content-Type": "application/json" }),
+    buildBody: (prompt, temperature = 0.7) => ({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { temperature, maxOutputTokens: 2048 },
+    }),
+    parseResponse: (data: any) =>
+      data.candidates?.[0]?.content?.parts?.[0]?.text || "",
+    parseTokenUsage: (data: any) =>
+      data.usageMetadata?.totalTokenCount || 0,
   },
   glm: {
     getUrl: () => "https://open.bigmodel.cn/api/paas/v4/chat/completions",
@@ -51,9 +61,13 @@ export const API_CONFIGS: Record<
       Authorization: `Bearer ${key}`,
     }),
     buildBody: (prompt, temperature = 0.7) => ({
-      model: "glm-4",
-      messages: [{ role: "user", content: prompt }],
+      model: "glm-4-flash",
+      messages: [
+        { role: "system", content: "You are a senior advertising strategist and master copywriter. Always respond with valid JSON when asked. Be creative, specific, and on-brand." },
+        { role: "user", content: prompt },
+      ],
       temperature,
+      max_tokens: 2048,
     }),
     parseResponse: (data: any) =>
       data.choices?.[0]?.message?.content || "",
@@ -62,14 +76,34 @@ export const API_CONFIGS: Record<
   },
 };
 
+/**
+ * Check if a provider requires an API key from env vars.
+ * Z-AI SDK provider uses the built-in SDK and needs no key.
+ */
+export function providerRequiresKey(provider: string): boolean {
+  return provider !== "z-ai";
+}
+
 export function getApiKey(provider: string): string | null {
   const envMap: Record<string, string> = {
-    gemini: process.env.GEMINI_API_KEY || "",
     deepseek: process.env.DEEPSEEK_API_KEY || "",
+    gemini: process.env.GEMINI_API_KEY || "",
     glm: process.env.GLM_API_KEY || "",
   };
   const key = envMap[provider];
   return key && key.length > 0 ? key : null;
+}
+
+/**
+ * Get list of providers that have API keys configured.
+ * Used by the frontend to show which providers are available.
+ */
+export function getAvailableProviders(): { id: string; label: string; available: boolean }[] {
+  return [
+    { id: "deepseek", label: "DeepSeek", available: !!(process.env.DEEPSEEK_API_KEY) },
+    { id: "gemini", label: "Gemini", available: !!(process.env.GEMINI_API_KEY) },
+    { id: "glm", label: "GLM", available: !!(process.env.GLM_API_KEY) },
+  ];
 }
 
 /**

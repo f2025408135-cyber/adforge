@@ -78,7 +78,7 @@ interface CampaignStore {
 }
 
 const initialFormState = {
-  provider: "gemini",
+  provider: "deepseek",
   productName: "",
   productDesc: "",
   tone: "professional",
