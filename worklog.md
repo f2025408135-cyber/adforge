@@ -84,3 +84,39 @@ Stage Summary:
 - Database fully operational with seed data
 - Professional cream/terracotta UI with interactive animations
 - Production build clean with no errors
+
+---
+Task ID: deepseek-v4-flash-upgrade
+Agent: Super Z (main)
+Task: Upgrade to DeepSeek V4 Flash model, update API key, ensure fully functional
+
+Work Log:
+- Verified DeepSeek V4 Flash model exists on DeepSeek API (confirmed via /models endpoint)
+- Tested new API key sk-53387238d28b4746abb40dff4b291c9d — working
+- Updated .env.local with new API key and DeepSeek V4 Flash comment
+- Updated ai-providers.ts: model changed from "deepseek-chat" to "deepseek-v4-flash"
+- Increased max_tokens from 2048 to 8192 for DeepSeek (reasoning model uses thinking tokens)
+- Increased max_tokens from 2048 to 4096 for Gemini and GLM
+- Updated getAvailableProviders() to include model names (V4 Flash, 2.0 Flash, 4 Flash)
+- Updated providers endpoint to return defaultProvider field
+- Updated frontend ALL_PROVIDERS to include model names
+- Updated provider selector UI to show model names below provider labels
+- Updated provider label from "API keys pre-configured on server" to "Pre-configured on server — always ready"
+- Updated PROVIDER_DESCRIPTIONS to reflect V4 Flash
+- Increased API timeouts: 120s for generate, 90s for regenerate/enhance (reasoning models need more time)
+- Enhanced enhance-description endpoint to strip JSON wrapping if AI returns JSON instead of plain text
+- Made enhance prompt more explicit: "No JSON, no code blocks, just the plain text"
+- Rebuilt successfully with next build — all routes compile
+- Tested full generation: DeepSeek V4 Flash produces high-quality campaign content
+- Tested regeneration: single section regeneration works
+- Tested enhance description: produces compelling enhanced descriptions
+- Removed stale Z-AI references from providerRequiresKey()
+
+Stage Summary:
+- DeepSeek V4 Flash is the primary (and only available) provider
+- API key sk-53387238d28b4746abb40dff4b291c9d pre-injected in .env.local (server-side only)
+- Full campaign generation verified working end-to-end
+- All three AI endpoints (generate, regenerate, enhance) tested and confirmed functional
+- Provider selector shows "V4 Flash" model name under DeepSeek
+- Timeouts increased for reasoning model's thinking time
+- Production build clean

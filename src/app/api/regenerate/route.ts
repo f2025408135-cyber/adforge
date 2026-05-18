@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
       method: "POST",
       headers,
       body: JSON.stringify(reqBody),
-      signal: AbortSignal.timeout(30000),
+      signal: AbortSignal.timeout(90000), // 90s timeout (reasoning models need more time)
     });
 
     if (!response.ok) {

@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid provider selected." }, { status: 400 });
     }
 
-    const prompt = `Improve and enrich this product description for advertising purposes. Make it more compelling, specific, and benefit-driven. Keep it concise (2-3 sentences). Product: ${productName}. Original description: ${productDesc}. Return ONLY the improved description, nothing else.`;
+    const prompt = `Improve and enrich this product description for advertising purposes. Make it more compelling, specific, and benefit-driven. Keep it concise (2-3 sentences). Product: ${productName}. Original description: ${productDesc}. Return ONLY the improved description text, nothing else. No JSON, no code blocks, just the plain text.`;
 
     const url = config.getUrl(apiKey);
     const headers = config.getHeaders(apiKey);
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
       method: "POST",
       headers,
       body: JSON.stringify(reqBody),
-      signal: AbortSignal.timeout(30000),
+      signal: AbortSignal.timeout(90000), // 90s timeout (reasoning models need more time)
     });
 
     if (!response.ok) {
@@ -60,7 +60,19 @@ export async function POST(req: NextRequest) {
     const data = await response.json();
     const raw = config.parseResponse(data);
     const tokensUsed = config.parseTokenUsage(data);
-    const enhancedDesc = raw.replace(/```json\s*|```/g, "").trim();
+    let enhancedDesc = raw.replace(/```json\s*|```/g, "").trim();
+    
+    // If the response looks like JSON with a text field, extract it
+    try {
+      const parsed = JSON.parse(enhancedDesc);
+      if (typeof parsed === "string") {
+        enhancedDesc = parsed;
+      } else if (parsed.description || parsed.text || parsed.enhanced || parsed.content) {
+        enhancedDesc = parsed.description || parsed.text || parsed.enhanced || parsed.content;
+      }
+    } catch {
+      // Not JSON, use as-is
+    }
 
     if (!enhancedDesc) {
       return NextResponse.json(

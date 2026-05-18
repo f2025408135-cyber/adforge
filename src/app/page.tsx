@@ -164,9 +164,9 @@ const SECTION_ICONS: Record<string, React.ReactNode> = {
 };
 
 const ALL_PROVIDERS = [
-  { id: "deepseek", label: "DeepSeek" },
-  { id: "gemini", label: "Gemini" },
-  { id: "glm", label: "GLM" },
+  { id: "deepseek", label: "DeepSeek", model: "V4 Flash" },
+  { id: "gemini", label: "Gemini", model: "2.0 Flash" },
+  { id: "glm", label: "GLM", model: "4 Flash" },
 ];
 
 type TabId = "generate" | "campaigns" | "templates" | "brand-kits" | "analytics";
@@ -256,7 +256,7 @@ function GenerateTab() {
   const brandKits = brandKitsQuery.data?.brandKits ?? [];
 
   // ── Fetch available providers from backend ──────────────────
-  const [availableProviders, setAvailableProviders] = useState<{ id: string; label: string; available: boolean }[]>([]);
+  const [availableProviders, setAvailableProviders] = useState<{ id: string; label: string; available: boolean; model: string }[]>([]);
   const [providersLoaded, setProvidersLoaded] = useState(false);
 
   useEffect(() => {
@@ -264,12 +264,14 @@ function GenerateTab() {
       .then((r) => r.json())
       .then((data) => {
         const providers = data.providers || [];
+        const defaultProvider = data.defaultProvider || "deepseek";
         setAvailableProviders(providers);
         setProvidersLoaded(true);
-        // Auto-select first available provider if current one isn't available
+        // Auto-select first available provider or default
         const currentAvailable = providers.find((p: any) => p.id === store.provider && p.available);
         if (!currentAvailable && providers.length > 0) {
-          const firstAvailable = providers.find((p: any) => p.available);
+          const defaultAvail = providers.find((p: any) => p.id === defaultProvider && p.available);
+          const firstAvailable = defaultAvail || providers.find((p: any) => p.available);
           if (firstAvailable) store.setProvider(firstAvailable.id);
         }
       })
@@ -510,27 +512,32 @@ function GenerateTab() {
             <div>
               <Label className="text-[11px] uppercase tracking-wider font-bold text-ink-soft mb-2 block">
                 AI Provider
-                <span className="ml-1.5 text-[9px] font-normal text-ink-muted">(API keys pre-configured on server)</span>
+                <span className="ml-1.5 text-[9px] font-normal text-ink-muted">(Pre-configured on server — always ready)</span>
               </Label>
               <div className="flex gap-2">
                 {ALL_PROVIDERS.map((p) => {
-                  const isAvailable = availableProviders.find((ap) => ap.id === p.id)?.available ?? false;
+                  const serverInfo = availableProviders.find((ap) => ap.id === p.id);
+                  const isAvailable = serverInfo?.available ?? false;
+                  const modelName = serverInfo?.model || p.model;
                   return (
                     <button
                       key={p.id}
                       onClick={() => isAvailable && store.setProvider(p.id)}
                       disabled={!isAvailable}
-                      className={`relative flex-1 px-3 py-2 rounded-md text-sm font-medium transition-all border ${
+                      className={`relative flex-1 px-3 py-2.5 rounded-md text-sm font-medium transition-all border ${
                         store.provider === p.id
-                          ? "bg-ink text-white border-ink"
+                          ? "bg-ink text-white border-ink shadow-sm"
                           : isAvailable
-                          ? "bg-white text-ink-soft border-border hover:border-ink/30"
+                          ? "bg-white text-ink-soft border-border hover:border-ink/30 hover:shadow-sm"
                           : "bg-white/50 text-ink-muted/40 border-border/50 cursor-not-allowed"
                       }`}
                     >
                       <span className="flex items-center justify-center gap-1.5">
                         <span className={`w-1.5 h-1.5 rounded-full ${isAvailable ? "bg-status-green" : "bg-ink-muted/30"}`} />
                         {p.label}
+                      </span>
+                      <span className={`block text-[10px] mt-0.5 ${store.provider === p.id ? "text-white/60" : "text-ink-muted"}`}>
+                        {modelName}
                       </span>
                     </button>
                   );

@@ -5,10 +5,9 @@
  * Both /api/generate and /api/regenerate import from here.
  *
  * Models updated to current supported versions:
- * - DeepSeek: deepseek-chat (DeepSeek-V3-0324)
+ * - DeepSeek: deepseek-v4-flash (reasoning model, fast + creative)
  * - Gemini: gemini-2.0-flash
  * - GLM: glm-4-flash (latest available)
- * - Z-AI: Built-in SDK provider (no key needed)
  */
 
 export const API_CONFIGS: Record<
@@ -28,26 +27,27 @@ export const API_CONFIGS: Record<
       Authorization: `Bearer ${key}`,
     }),
     buildBody: (prompt, temperature = 0.7) => ({
-      model: "deepseek-chat",
+      model: "deepseek-v4-flash",
       messages: [
         { role: "system", content: "You are a senior advertising strategist and master copywriter at a top-tier creative agency. Always respond with valid JSON when asked. Be creative, specific, and on-brand." },
         { role: "user", content: prompt },
       ],
       temperature,
-      max_tokens: 2048,
+      max_tokens: 8192,
     }),
     parseResponse: (data: any) =>
       data.choices?.[0]?.message?.content || "",
     parseTokenUsage: (data: any) =>
       (data.usage?.prompt_tokens || 0) + (data.usage?.completion_tokens || 0),
   },
+  // Gemini & GLM kept as options but DeepSeek is the primary provider
   gemini: {
     getUrl: (key) =>
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
     getHeaders: () => ({ "Content-Type": "application/json" }),
     buildBody: (prompt, temperature = 0.7) => ({
       contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { temperature, maxOutputTokens: 2048 },
+      generationConfig: { temperature, maxOutputTokens: 4096 },
     }),
     parseResponse: (data: any) =>
       data.candidates?.[0]?.content?.parts?.[0]?.text || "",
@@ -67,7 +67,7 @@ export const API_CONFIGS: Record<
         { role: "user", content: prompt },
       ],
       temperature,
-      max_tokens: 2048,
+      max_tokens: 4096,
     }),
     parseResponse: (data: any) =>
       data.choices?.[0]?.message?.content || "",
@@ -81,7 +81,8 @@ export const API_CONFIGS: Record<
  * Z-AI SDK provider uses the built-in SDK and needs no key.
  */
 export function providerRequiresKey(provider: string): boolean {
-  return provider !== "z-ai";
+  // All providers require a key
+  return true;
 }
 
 export function getApiKey(provider: string): string | null {
@@ -98,11 +99,11 @@ export function getApiKey(provider: string): string | null {
  * Get list of providers that have API keys configured.
  * Used by the frontend to show which providers are available.
  */
-export function getAvailableProviders(): { id: string; label: string; available: boolean }[] {
+export function getAvailableProviders(): { id: string; label: string; available: boolean; model: string }[] {
   return [
-    { id: "deepseek", label: "DeepSeek", available: !!(process.env.DEEPSEEK_API_KEY) },
-    { id: "gemini", label: "Gemini", available: !!(process.env.GEMINI_API_KEY) },
-    { id: "glm", label: "GLM", available: !!(process.env.GLM_API_KEY) },
+    { id: "deepseek", label: "DeepSeek", available: !!(process.env.DEEPSEEK_API_KEY), model: "V4 Flash" },
+    { id: "gemini", label: "Gemini", available: !!(process.env.GEMINI_API_KEY), model: "2.0 Flash" },
+    { id: "glm", label: "GLM", available: !!(process.env.GLM_API_KEY), model: "4 Flash" },
   ];
 }
 

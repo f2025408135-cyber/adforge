@@ -11,5 +11,8 @@ import { getAvailableProviders } from "@/lib/ai-providers";
 
 export async function GET() {
   const providers = getAvailableProviders();
-  return NextResponse.json({ providers });
+  return NextResponse.json({
+    providers,
+    defaultProvider: "deepseek", // DeepSeek V4 Flash is always available
+  });
 }
