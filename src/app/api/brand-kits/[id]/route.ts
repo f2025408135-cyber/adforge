@@ -19,7 +19,10 @@ export async function GET(
 ) {
   try {
     if (!isDbAvailable()) {
-      return NextResponse.json({ error: "Database unavailable." }, { status: 503 });
+      return NextResponse.json(
+        { error: "Database unavailable in serverless mode. Features requiring persistence are disabled." },
+        { status: 503 }
+      );
     }
     const { id } = await params;
 
@@ -43,7 +46,10 @@ export async function PUT(
 ) {
   try {
     if (!isDbAvailable()) {
-      return NextResponse.json({ error: "Database unavailable." }, { status: 503 });
+      return NextResponse.json(
+        { error: "Database unavailable in serverless mode. Features requiring persistence are disabled." },
+        { status: 503 }
+      );
     }
     const { id } = await params;
 
@@ -79,7 +85,10 @@ export async function DELETE(
 ) {
   try {
     if (!isDbAvailable()) {
-      return NextResponse.json({ error: "Database unavailable." }, { status: 503 });
+      return NextResponse.json(
+        { error: "Database unavailable in serverless mode. Features requiring persistence are disabled." },
+        { status: 503 }
+      );
     }
     const { id } = await params;
 

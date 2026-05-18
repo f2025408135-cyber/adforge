@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
   try {
     if (!isDbAvailable()) {
       return NextResponse.json(
-        { error: "Database unavailable. Campaign saving requires a database connection." },
+        { error: "Database unavailable in serverless mode. Features requiring persistence are disabled." },
         { status: 503 }
       );
     }

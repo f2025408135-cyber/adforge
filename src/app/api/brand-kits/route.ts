@@ -34,7 +34,10 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     if (!isDbAvailable()) {
-      return NextResponse.json({ error: "Database unavailable." }, { status: 503 });
+      return NextResponse.json(
+        { error: "Database unavailable in serverless mode. Features requiring persistence are disabled." },
+        { status: 503 }
+      );
     }
     const body = await req.json();
 

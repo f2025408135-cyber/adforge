@@ -11,7 +11,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { API_CONFIGS, getApiKey, mapCreativityToTemperature } from "@/lib/ai-providers";
 import { buildGenerationPrompt, TEMPLATE_PROMPTS } from "@/lib/prompt-templates";
 import { generateSchema } from "@/lib/validations";
-import { db } from "@/lib/db";
+import { db, isDbAvailable } from "@/lib/db";
 
 export async function POST(req: NextRequest) {
   try {
@@ -60,18 +60,18 @@ export async function POST(req: NextRequest) {
     if (templateId) {
       if (TEMPLATE_PROMPTS[templateId]) {
         templateAdditions = TEMPLATE_PROMPTS[templateId];
-      } else {
+      } else if (isDbAvailable()) {
         try {
-          const template = await db.template?.findUnique({ where: { id: templateId } });
+          const template = await db.template.findUnique({ where: { id: templateId } });
           if (template) {
             templateAdditions = template.promptTemplate;
-            await db.template?.update({
+            await db.template.update({
               where: { id: templateId },
               data: { usageCount: { increment: 1 } },
             });
           }
         } catch {
-          // DB unavailable — skip custom template lookup
+          // DB error — skip custom template lookup
         }
       }
     }
@@ -154,13 +154,15 @@ export async function POST(req: NextRequest) {
     }
 
     // ── Record API usage ──────────────────────────────────────
-    try {
-      const userId = "demo-user";
-      await db.apiUsage.create({
-        data: { userId, provider, endpoint: "generate", tokensUsed },
-      });
-    } catch {
-      // Non-critical: don't fail the request if usage tracking fails
+    if (isDbAvailable()) {
+      try {
+        const userId = "demo-user";
+        await db.apiUsage.create({
+          data: { userId, provider, endpoint: "generate", tokensUsed },
+        });
+      } catch {
+        // Non-critical: don't fail the request if usage tracking fails
+      }
     }
 
     return NextResponse.json({ result, provider, tokensUsed });

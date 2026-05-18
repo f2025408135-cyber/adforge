@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { API_CONFIGS, getApiKey, mapCreativityToTemperature } from "@/lib/ai-providers";
 import { SECTION_PROMPTS, TONE_MAP } from "@/lib/prompt-templates";
 import { regenerateSchema } from "@/lib/validations";
-import { db } from "@/lib/db";
+import { db, isDbAvailable } from "@/lib/db";
 
 export async function POST(req: NextRequest) {
   try {
@@ -97,13 +97,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    try {
-      const userId = "demo-user";
-      await db.apiUsage.create({
-        data: { userId, provider, endpoint: `regenerate-${sectionKey}`, tokensUsed },
-      });
-    } catch {
-      // Non-critical
+    if (isDbAvailable()) {
+      try {
+        const userId = "demo-user";
+        await db.apiUsage.create({
+          data: { userId, provider, endpoint: `regenerate-${sectionKey}`, tokensUsed },
+        });
+      } catch {
+        // Non-critical
+      }
     }
 
     return NextResponse.json({ text, tokensUsed });

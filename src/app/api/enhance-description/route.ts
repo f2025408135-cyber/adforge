@@ -8,7 +8,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { API_CONFIGS, getApiKey } from "@/lib/ai-providers";
 import { enhanceDescSchema } from "@/lib/validations";
-import { db } from "@/lib/db";
+import { db, isDbAvailable } from "@/lib/db";
 
 export async function POST(req: NextRequest) {
   try {
@@ -81,13 +81,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    try {
-      const userId = "demo-user";
-      await db.apiUsage.create({
-        data: { userId, provider, endpoint: "enhance-description", tokensUsed },
-      });
-    } catch {
-      // Non-critical
+    if (isDbAvailable()) {
+      try {
+        const userId = "demo-user";
+        await db.apiUsage.create({
+          data: { userId, provider, endpoint: "enhance-description", tokensUsed },
+        });
+      } catch {
+        // Non-critical
+      }
     }
 
     return NextResponse.json({ enhancedDesc, tokensUsed });
