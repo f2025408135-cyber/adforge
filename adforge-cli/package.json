@@ -1,0 +1,19 @@
+{
+  "name": "adforge-cli",
+  "version": "2.0.0",
+  "description": "AdForge — AI-Powered Ad Campaign Generator CLI (Multi-Provider: AdForge AI, DeepSeek, Gemini 2.5 Flash, GLM)",
+  "type": "module",
+  "main": "adforge.js",
+  "bin": {
+    "adforge": "./adforge.js"
+  },
+  "scripts": {
+    "start": "node adforge.js",
+    "interactive": "node adforge.js -i"
+  },
+  "keywords": ["ai", "advertising", "marketing", "cli", "deepseek", "gemini", "adforge"],
+  "license": "MIT",
+  "dependencies": {
+    "z-ai-web-dev-sdk": "latest"
+  }
+}
